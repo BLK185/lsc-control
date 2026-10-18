@@ -43,10 +43,16 @@ def lsc_command(functions, dps, action, value):
             raise ControlError("Cette scène dépasse la capacité de l'ampoule.")
         return {writable("work_mode"):"scene",writable(code):value}
     if action == "white":
-        mode = writable("work_mode")
-        commands = lsc_command(functions,dps,"temperature",value["temperature"])
-        commands.update(lsc_command(functions,dps,"brightness",value["brightness"]))
-        return {**commands, mode:"white"}
+        commands = {}
+        for feature, codes in (("temperature", ("temp_value", "temp_value_v2")),
+                               ("brightness", ("bright_value", "bright_value_v2"))):
+            if any(code in functions for code in codes):
+                commands.update(lsc_command(functions, dps, feature, value[feature]))
+        if not commands:
+            raise ControlError("Cet éclairage n'a pas de réglage blanc.")
+        if "work_mode" in functions:
+            commands[writable("work_mode")] = "white"
+        return commands
     if action == "brightness":
         code = "bright_value_v2" if "bright_value_v2" in functions else "bright_value"
         spec = functions.get(code,{}).get("values",{})
@@ -66,12 +72,21 @@ def lsc_command(functions, dps, action, value):
             hsv = {"h":round(value["h"]), "s":round(value["s"]*10), "v":round(value["v"]*10)}
         if isinstance(raw, str) and re.fullmatch(r"[a-fA-F0-9]{12}", raw):
             encoded = "".join(f"{hsv[k]:04x}" for k in ("h", "s", "v"))
+        elif isinstance(raw, str) and re.fullmatch(r"[a-fA-F0-9]{14}", raw):
+            rgb = colorsys.hsv_to_rgb(hsv['h'] / 360, hsv['s'] / 1000, hsv['v'] / 1000)
+            encoded = ''.join(f'{round(c * 255):02x}' for c in rgb)
+            encoded += f"{hsv['h']:04x}{round(hsv['s'] * 255 / 1000):02x}{round(hsv['v'] * 255 / 1000):02x}"
         elif isinstance(raw, str) and raw.startswith("{") and decode_hsv(raw):
             encoded = json.dumps(hsv, separators=(",", ":"))
         elif isinstance(raw, dict) and decode_hsv(raw):
             encoded = hsv
         else:
             raise ControlError("Format de couleur LSC non reconnu. Aucune couleur envoyée.")
-        return {writable("work_mode"):"colour", dp:encoded}
+        result = {dp:encoded}
+        if "work_mode" in functions:
+            spec = functions['work_mode'].get('values', {})
+            modes = spec.get('range', [])
+            result[writable("work_mode")] = "color" if "color" in modes and "colour" not in modes else "colour"
+        return result
     commands = cloud_command(functions, action, value)
     return {writable(command["code"]):command["value"] for command in commands}

@@ -6,15 +6,14 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 from collections import OrderedDict
 from pathlib import Path
-from PySide6.QtCore import QObject, Signal, QTimer, Qt
-from PySide6.QtGui import QAction, QColor, QFont, QFontDatabase, QIcon, QPainter, QPixmap
+from PySide6.QtCore import QObject, Signal, QTimer, Qt, QEvent
+from PySide6.QtGui import QColor, QIcon, QPainter, QPixmap
 from PySide6.QtWidgets import (
-    QApplication, QCheckBox, QColorDialog, QComboBox, QDialog, QDialogButtonBox,
-    QFileDialog, QFormLayout, QGroupBox, QHBoxLayout, QInputDialog, QLabel,
-    QLineEdit, QMainWindow, QMenu, QMessageBox, QPushButton, QSlider,
-    QSystemTrayIcon, QVBoxLayout, QWidget,
+    QApplication, QCheckBox, QDialog, QHBoxLayout, QLabel, QMainWindow,
+    QMessageBox, QPushButton, QSystemTrayIcon, QVBoxLayout, QWidget,
+    QScrollArea, QGridLayout,
 )
-from core import Controller, ControlError, DEFAULTS, Store
+from core import Controller, ControlError, Store
 
 def bulb_icon():
     pixmap = QPixmap(64, 64)
@@ -29,106 +28,6 @@ def bulb_icon():
     painter.drawRoundedRect(24, 53, 16, 6, 3, 3)
     painter.end()
     return QIcon(pixmap)
-
-class Settings(QDialog):
-    def __init__(self, store, parent=None):
-        super().__init__(parent)
-        self.store = store
-        self.setWindowTitle("Connexion avancée aux ampoules")
-        self.resize(540, 580)
-        config = store.load()
-        layout = QVBoxLayout(self)
-        info = QLabel("Mode local : IP, identifiant et clé locale.\nMode cloud : API développeur Tuya — ce n’est pas une connexion au compte LSC.\nLes champs secrets laissés vides conservent les valeurs enregistrées.")
-        info.setWordWrap(True)
-        layout.addWidget(info)
-        form = QFormLayout()
-        self.mode = QComboBox()
-        self.mode.addItems(["lsc", "local", "cloud"])
-        self.mode.setCurrentText(config["mode"])
-        form.addRow("Connexion", self.mode)
-        self.region = QComboBox()
-        self.region.addItems(["eu", "eu-w", "us", "us-e", "cn", "in", "sg"])
-        self.region.setCurrentText(config.get("region", "eu"))
-        form.addRow("Centre de données Tuya", self.region)
-        self.access = QLineEdit()
-        self.access.setPlaceholderText("Access ID du projet — vide pour conserver")
-        self.secret = QLineEdit()
-        self.secret.setEchoMode(QLineEdit.EchoMode.Password)
-        self.secret.setPlaceholderText("Access Secret — vide pour conserver")
-        form.addRow("Access ID", self.access)
-        form.addRow("Access Secret", self.secret)
-        layout.addLayout(form)
-        self.fields = {}
-        for device in config["devices"]:
-            box = QGroupBox(device["name"])
-            subform = QFormLayout(box)
-            fields = {}
-            for key, label in (("device_id", "Identifiant"), ("ip", "Adresse IP"), ("version", "Protocole"), ("local_key", "Clé locale")):
-                if key == "version":
-                    field = QComboBox()
-                    field.addItems(["3.1", "3.2", "3.3", "3.4", "3.5"])
-                    field.setCurrentText(str(device.get(key, "3.3")))
-                else:
-                    field = QLineEdit(device.get(key, "") if key != "local_key" else "")
-                    if key == "local_key":
-                        field.setEchoMode(QLineEdit.EchoMode.Password)
-                        field.setPlaceholderText("16 octets — vide pour conserver")
-                subform.addRow(label, field)
-                fields[key] = field
-            self.fields[device["slot"]] = fields
-            layout.addWidget(box)
-        button = QPushButton("Importer un devices.json de TinyTuya…")
-        button.clicked.connect(self.import_devices)
-        layout.addWidget(button)
-        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel)
-        buttons.accepted.connect(self.save)
-        buttons.rejected.connect(self.reject)
-        layout.addWidget(buttons)
-
-    def import_devices(self):
-        path, _ = QFileDialog.getOpenFileName(self, "Choisir devices.json", "", "JSON (*.json)")
-        if not path:
-            return
-        try:
-            devices = json.loads(Path(path).read_text(encoding="utf-8"))
-            if not isinstance(devices, list) or not devices:
-                raise ValueError()
-            labels = [str(d.get("name", "Appareil")) + " — " + str(d.get("id", "")) for d in devices]
-            for target in DEFAULTS:
-                label, ok = QInputDialog.getItem(self, "Associer les appareils", "Quel appareil correspond à " + target["name"] + " ?", labels, editable=False)
-                if not ok:
-                    return
-                device = devices[labels.index(label)]
-                fields = self.fields[target["slot"]]
-                fields["device_id"].setText(str(device.get("id", "")))
-                fields["local_key"].setText(str(device.get("key", "")))
-                fields["ip"].setText(str(device.get("ip", "")))
-                version = str(device.get("version", "3.3"))
-                if version in ("3.1", "3.2", "3.3", "3.4", "3.5"):
-                    fields["version"].setCurrentText(version)
-        except Exception:
-            QMessageBox.warning(self, "Import impossible", "Ce fichier n'est pas une liste devices.json reconnue.")
-
-    def save(self):
-        try:
-            config = self.store.load()
-            config["mode"], config["region"] = self.mode.currentText(), self.region.currentText()
-            for device in config["devices"]:
-                fields = self.fields[device["slot"]]
-                key = fields["local_key"].text()
-                if key and len(key.encode()) != 16:
-                    raise ControlError("Une clé locale doit contenir 16 octets.")
-                for name in ("device_id", "ip"):
-                    device[name] = fields[name].text().strip()
-                device["version"] = fields["version"].currentText()
-                self.store.set_secret("local:" + device["slot"], key)
-            self.store.set_secret("cloud_id", self.access.text().strip())
-            self.store.set_secret("cloud_secret", self.secret.text().strip())
-            self.store.save(config)
-            self.accept()
-        except Exception as exc:
-            QMessageBox.warning(self, "Enregistrement impossible",
-                                str(exc) if isinstance(exc, ControlError) else "Impossible d'enregistrer la configuration ou d'accéder au coffre système.")
 
 class Results(QObject):
     ready = Signal(object, object)
@@ -149,7 +48,7 @@ class Window(QMainWindow):
         self.results.ready.connect(self.complete)
         self.setWindowTitle("LSC Control" + (" — démonstration" if controller.demo else ""))
         self.setWindowIcon(bulb_icon())
-        self.resize(900, 710)
+        self.resize(900, 790)
         root = QWidget()
         self.setCentralWidget(root)
         layout = QVBoxLayout(root)
@@ -159,21 +58,27 @@ class Window(QMainWindow):
         self.message = QLabel("Mode démonstration : aucune ampoule réelle n'est commandée." if controller.demo else "Connecte ton compte avec Connexion LSC… pour lire tes appareils.")
         self.message.setWordWrap(True)
         layout.addWidget(self.message)
-        row = QHBoxLayout()
         self.cards = {}
-        for device in controller.store.load()["devices"]:
-            card = LampCard(device, self)
-            self.cards[device["slot"]] = card
-            row.addWidget(card)
-        layout.addLayout(row)
+        self.card_signatures = {}
+        self.scroll = QScrollArea()
+        self.scroll.setWidgetResizable(True)
+        self.scroll.viewport().installEventFilter(self)
+        self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.card_container = QWidget()
+        self.card_grid = QGridLayout(self.card_container)
+        self.card_grid.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.empty = QLabel("Aucun éclairage. Ajoute-le dans LSC Smart Connect sur ton téléphone ; il apparaîtra ici automatiquement.")
+        self.empty.setWordWrap(True)
+        self.scroll.setWidget(self.card_container)
+        layout.addWidget(self.scroll, 1)
+        self.reconcile_cards(controller.devices())
         actions = QHBoxLayout()
         for label, callback in (
             ("Tout allumer", lambda: self.group(True)),
             ("Tout éteindre", lambda: self.group(False)),
-            ("Actualiser", self.refresh),
+            ("Synchroniser", lambda: self.refresh(force=True)),
             ("Connexion LSC…", self.lsc_login),
-            ("Réglages avancés…", self.settings),
-            ("Détecter…", self.scan),
+            ("Connexion locale rapide", self.scan),
         ):
             button = QPushButton(label)
             button.clicked.connect(callback)
@@ -215,7 +120,7 @@ class Window(QMainWindow):
         self.busy = False
         if self.pending_commands:
             (slot, action), value = self.pending_commands.popitem(last=False)
-            QTimer.singleShot(0, lambda: self.command(slot, action, value))
+            QTimer.singleShot(0, lambda s=slot, a=action, v=value: self.command(s, a, v))
         for card in self.cards.values():
             for control in card.controls:
                 control.setEnabled(True)
@@ -225,19 +130,27 @@ class Window(QMainWindow):
                 self.tray.showMessage("Commande LSC impossible", error, QSystemTrayIcon.MessageIcon.Warning)
             return
         if context == "scan":
-            text = "\n".join(f"{d['ip']} · {d['device_id']} · protocole {d['version']}" for d in values)
-            QMessageBox.information(self, "Appareils détectés", text or "Aucun appareil trouvé. Vérifie le réseau et le pare-feu.")
-            self.message.setText("Les ampoules du compte LSC trouvées sur ce réseau utilisent désormais le contrôle local rapide." if self.controller.store.load()["mode"] == "lsc" else "La détection ne fournit pas la clé locale.")
+            known = {d.get("device_id") for d in self.controller.devices()}
+            count = sum(d.get("device_id") in known for d in values)
+            self.message.setText(f"Connexion locale disponible pour {count} éclairage(s)." if count else
+                                 "Aucun éclairage retrouvé sur ce réseau. Le contrôle LSC reste disponible.")
             return
-        errors = []
+        sync_error = None
+        if isinstance(values, dict):
+            self.reconcile_cards(values["devices"])
+            sync_error = values.get("sync_error")
+            values = values["states"]
+        errors = [sync_error] if sync_error else []
         for state in values:
+            if state["slot"] not in self.cards:
+                continue
             self.device_states[state["slot"]] = state
             if "error" in state:
                 self.cards[state["slot"]].status.setText("Non joignable")
                 errors.append(state["error"])
                 continue
             slot = state["slot"]
-            for device in self.controller.store.load()["devices"]:
+            for device in self.controller.devices():
                 if device["slot"] == slot:
                     self.cards[slot].setTitle(device["name"])
             previous = self.last_states.get(slot)
@@ -260,10 +173,12 @@ class Window(QMainWindow):
         interval = 20000 if config["mode"] == "cloud" else (5000 if config["mode"] == "lsc" else 3000)
         if self.timer.interval() != interval:
             self.timer.setInterval(interval)
-        if self.controller.demo or any(d.get("device_id") for d in config["devices"]):
+        if self.controller.demo or config["mode"] == "lsc" or any(d.get("device_id") for d in config["devices"]):
             self.refresh(observe=True)
 
     def command(self, slot, action, value):
+        if slot not in self.cards:
+            return
         if self.busy:
             key = (slot, action)
             self.pending_commands[key] = value
@@ -276,22 +191,70 @@ class Window(QMainWindow):
         for slot in self.cards:
             self.command(slot, "power", power)
 
-    def refresh(self, observe=False):
+    def reconcile_cards(self, devices):
+        import json
+        wanted = {d["slot"] for d in devices}
+        for slot in list(self.cards):
+            if slot not in wanted:
+                self.card_grid.removeWidget(self.cards[slot])
+                self.cards.pop(slot).deleteLater()
+                self.card_signatures.pop(slot, None)
+                self.device_states.pop(slot, None)
+                self.last_states.pop(slot, None)
+        self.pending_commands = OrderedDict((key, value) for key, value in self.pending_commands.items() if key[0] in wanted)
+        for device in devices:
+            slot = device["slot"]
+            signature = json.dumps([device.get("rgb"), device.get("lsc_functions")], sort_keys=True)
+            if slot not in self.cards or self.card_signatures.get(slot) != signature:
+                if slot in self.cards:
+                    self.card_grid.removeWidget(self.cards[slot])
+                    self.cards.pop(slot).deleteLater()
+                self.cards[slot] = LampCard(device, self)
+                self.cards[slot].setMinimumWidth(340)
+                self.card_signatures[slot] = signature
+            self.cards[slot].setTitle(device["name"])
+        self.card_order = [d["slot"] for d in devices]
+        self.layout_cards()
+
+    def layout_cards(self):
+        if not hasattr(self, "card_grid"):
+            return
+        for card in self.cards.values():
+            self.card_grid.removeWidget(card)
+        self.card_grid.removeWidget(self.empty)
+        columns = max(1, min(3, self.scroll.viewport().width() // 370))
+        for index, slot in enumerate(self.card_order):
+            self.card_grid.addWidget(self.cards[slot], index // columns, index % columns)
+        self.empty.setVisible(not self.cards)
+        if not self.cards:
+            self.card_grid.addWidget(self.empty, 0, 0)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.layout_cards()
+
+    def eventFilter(self, watched, event):
+        if hasattr(self, "scroll") and watched is self.scroll.viewport() and event.type() == QEvent.Type.Resize:
+            self.layout_cards()
+        return super().eventFilter(watched, event)
+
+    def refresh(self, observe=False, force=False):
         def work():
+            sync_error = None
+            try:
+                self.controller.synchronize_lights(force=force)
+            except ControlError as exc:
+                sync_error = "Synchronisation : " + str(exc)
+            devices = self.controller.devices()
             result = []
-            for slot in self.cards:
+            for device in devices:
+                slot = device["slot"]
                 try:
                     result.append(self.controller.status(slot))
                 except ControlError as exc:
                     result.append({"slot": slot, "error": str(exc)})
-            return result
+            return {"devices": devices, "states": result, "sync_error": sync_error}
         self.submit(work, "observe" if observe else "refresh")
-
-    def settings(self):
-        if self.busy:
-            return
-        if Settings(self.controller.store, self).exec() == QDialog.DialogCode.Accepted:
-            self.refresh()
 
     def lsc_login(self):
         if self.busy:
@@ -301,7 +264,7 @@ class Window(QMainWindow):
         if dialog.exec() == QDialog.DialogCode.Accepted:
             self.message.setText("Compte LSC connecté. Lecture des ampoules…")
             self.controller.demo = False
-            self.refresh()
+            self.refresh(force=True)
 
     def scan(self):
         self.submit(self.controller.scan, "scan")

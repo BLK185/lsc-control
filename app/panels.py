@@ -109,19 +109,22 @@ class LampCard(QGroupBox):
     def __init__(self, device, window):
         super().__init__(device['name'])
         self.window, self.slot, self.rgb = window, device['slot'], device['rgb']
+        from lighting import capabilities
+        self.capabilities = caps = capabilities(device)
         self.power = None
         self.syncing = False
         self.countdown_raw = None
         self.countdown_read_at = 0
         layout = QVBoxLayout(self)
-        subtitle = QLabel('A60 RGB-CCT · couleur et blancs' if self.rgb else 'A65 CCT · blancs chaud et froid')
+        description = [label for key, label in (('rgb', 'Couleurs'), ('temperature', 'Blanc chaud et froid'), ('brightness', 'Luminosité')) if caps[key]]
+        subtitle = QLabel(' · '.join(description) or 'Éclairage')
         subtitle.setObjectName('subtitle')
         layout.addWidget(subtitle)
         self.status = QLabel('État inconnu · connexion requise')
         self.status.setObjectName('status')
         layout.addWidget(self.status)
         self.tabs = QTabWidget()
-        self.white = QWidget()
+        self.white = QWidget(self)
         white_layout = QVBoxLayout(self.white)
         self.white_ring = LightRing()
         self.white_ring.changed.connect(lambda value: self.white_label.setText(f'Blanc chaud → froid · {round(value)} %'))
@@ -133,7 +136,14 @@ class LampCard(QGroupBox):
         white_layout.addWidget(self.white_label)
         self.white_brightness = self.slider(white_layout, '☀  Luminosité', 100, 1)
         self.white_brightness.sliderReleased.connect(self.send_white)
-        self.tabs.addTab(self.white, 'Blanc')
+        self.white_ring.setVisible(caps['temperature'])
+        self.white_label.setVisible(caps['temperature'])
+        self.white_brightness.setVisible(caps['brightness'])
+        self.white_brightness.caption.setVisible(caps['brightness'])
+        if caps['white']:
+            self.tabs.addTab(self.white, 'Blanc')
+        else:
+            self.white.hide()
         if self.rgb:
             self.colour = QWidget()
             colour_layout = QVBoxLayout(self.colour)
@@ -150,17 +160,24 @@ class LampCard(QGroupBox):
             self.tabs.addTab(self.colour, 'Couleur')
         from feature_panels import ScenesPanel
         self.scene_panel = ScenesPanel(self)
-        self.tabs.addTab(self.scene_panel, 'Scène')
+        if caps['scenes']:
+            self.tabs.addTab(self.scene_panel, 'Scène')
+        else:
+            self.scene_panel.hide()
         self.tabs.currentChanged.connect(self.tab_changed)
+        self.tabs.setVisible(self.tabs.count() > 0)
         layout.addWidget(self.tabs)
         bottom = QHBoxLayout()
         countdown = QPushButton('Compte à rebours')
         countdown.clicked.connect(self.countdown)
+        countdown.setVisible(caps['countdown'])
         self.power_button = QPushButton('⏻  Allumer')
         self.power_button.setObjectName('powerButton')
         self.power_button.clicked.connect(self.toggle)
         planning = QPushButton('Planning…')
         planning.clicked.connect(self.planning)
+        planning.setVisible(caps['planning'])
+        self.power_button.setEnabled(caps['power'])
         bottom.addWidget(countdown)
         bottom.addWidget(self.power_button)
         bottom.addWidget(planning)
@@ -172,6 +189,7 @@ class LampCard(QGroupBox):
     def slider(self, layout, title, value, minimum):
         label = QLabel(f'{title} · {value} %')
         slider = QSlider(Qt.Orientation.Horizontal)
+        slider.caption = label
         slider.setRange(minimum, 100)
         slider.setValue(value)
         slider.valueChanged.connect(lambda n: label.setText(f'{title} · {n} %'))
@@ -190,7 +208,8 @@ class LampCard(QGroupBox):
     def send_white(self):
         if self.syncing:
             return
-        self.window.command(self.slot,'white',{'temperature':self.white_ring.value,'brightness':self.white_brightness.value()})
+        if self.capabilities['white']:
+            self.window.command(self.slot,'white',{'temperature':self.white_ring.value,'brightness':self.white_brightness.value()})
 
     def send_colour(self):
         if self.syncing:
@@ -199,9 +218,9 @@ class LampCard(QGroupBox):
 
     def tab_changed(self, index):
         if not self.syncing:
-            if index == 0:
+            if self.tabs.widget(index) is self.white:
                 self.send_white()
-            elif index == 1 and self.rgb:
+            elif self.rgb and self.tabs.widget(index) is self.colour:
                 self.send_colour()
 
     def show_state(self, state):
@@ -237,8 +256,10 @@ class LampCard(QGroupBox):
                     self.saturation.setValue(round(hsv['s']))
                     self.colour_brightness.setValue(max(1, round(hsv['v'])))
                 self.update_colour_preview()
-                if self.tabs.currentIndex() in (0, 1) and mode in ('white', 'colour'):
-                    self.tabs.setCurrentIndex(1 if mode == 'colour' else 0)
+                if self.tabs.currentWidget() in (self.white, self.colour) and mode in ('white', 'colour'):
+                    target = self.colour if mode == 'colour' else self.white
+                    if self.tabs.indexOf(target) >= 0:
+                        self.tabs.setCurrentWidget(target)
         finally:
             self.syncing = False
 

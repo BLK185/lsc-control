@@ -2,6 +2,17 @@
 
 Ce journal reconstitue les étapes à partir des notes du projet et des essais du propriétaire. Il ne prétend pas que les commits GitHub ont été créés ces jours-là : la mise en dépôt a lieu le 18 octobre 2026. Aucune activité n’est inventée pour les jours sans trace.
 
+## 18 octobre 2026 — éclairages du compte, v0.2.0
+
+- Remplacement de l’association fixe A65/A60 par tous les éclairages compatibles du compte, avec plusieurs exemplaires d’un même modèle.
+- Synchronisation des ajouts, suppressions et noms toutes les 30 secondes ; schémas relus toutes les cinq minutes ou à la demande.
+- Conservation des profils et clés par identifiant d’appareil, sans publier ces données.
+- Filtrage des catégories Lighting, exclusion des boîtiers HDMI et commandes adaptées aux fonctions déclarées.
+- Grille défilante et menu de notification alimentés par ce catalogue ; suppression des réglages avancés.
+- Correction du ciblage des commandes groupées : la commande suivante conservait une variable réaffectée lors du retour d’état.
+- 113 tests automatiques, dont une file Qt complète avec trois cibles et une cible en erreur. Lecture réelle du compte et des deux éclairages sans modification de leur état.
+- Appairage Windows examiné avec REA et les sources Tuya ; non livré faute de transport natif validé. L’ajout mobile est suivi par la synchronisation du compte.
+
 ## 18 octobre 2026 — première publication préparée, v0.1.0
 
 - Commandes enrichies dans la zone de notification : noms LSC, états, luminosité, blancs, couleurs, scènes, minuteur et planning.

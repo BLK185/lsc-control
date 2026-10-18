@@ -19,7 +19,10 @@ from theme import apply_theme
 class PreviewStore:
     def __init__(self):
         self.config = {"mode":"local", "devices":[dict(item) for item in DEFAULTS]}
-        self.config["devices"][1].update(name="Lampe RGB",lsc_functions={"switch_led":{"id":"20"}})
+        self.config["devices"][1].update(name="Lampe RGB")
+        for device in self.config["devices"]:
+            device["lsc_functions"] = {code:{"id":str(dp), "mode":"rw", "values":{}}
+                for dp, code in enumerate(["switch_led","work_mode","bright_value","temp_value","scene_data","countdown"] + (["colour_data"] if device["rgb"] else []),20)}
 
     def load(self):
         return self.config

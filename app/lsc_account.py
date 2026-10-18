@@ -4,6 +4,7 @@ Passwords are never requested. Session data stays in the operating-system
 credential vault; helper stdout is protocol-only and is never logged.
 """
 import json
+import hashlib
 import os
 import subprocess
 import sys
@@ -187,35 +188,57 @@ class LSCAccount:
         self.store.save(config)
         return public
 
-    def prepare_bulbs(self):
+    def prepare_bulbs(self, refresh_schema=True):
+        """Reconcile a complete account inventory, preserving profiles by device ID.
+
+        Build the new list before saving: a failed inventory never clears it.
+        Detail failures preserve known lights; new unknown devices are retried.
+        """
+        from lighting import capabilities, is_lighting
         devices = self.devices()
-        self.remember_devices(devices)
-        by_slot = {"a65":[], "a60":[]}
+        config = self.store.load()
+        previous = {d.get("device_id"): d for d in config.get("devices", []) if d.get("device_id")}
+        accepted, lights, seen = [], [], set()
         for device in devices:
             device_id = device.get("devId", device.get("id"))
-            if not device_id:
+            if not device_id or device_id in seen:
                 continue
-            detail = self.request("tuya.m.device.get", {"devId":device_id}, gid=device["_home_id"])
-            functions = schema_functions(detail.get("schema"))
-            if not {"switch_led", "temp_value", "bright_value"}.issubset(functions):
+            seen.add(device_id)
+            old = previous.get(device_id, {})
+            detail = {}
+            functions = old.get("lsc_functions")
+            if refresh_schema or not functions:
+                try:
+                    detail = self.request("tuya.m.device.get", {"devId":device_id}, gid=device["_home_id"])
+                    if not isinstance(detail, dict):
+                        raise ControlError("Description de l'éclairage LSC non reconnue.")
+                    functions = schema_functions(detail.get("schema"))
+                except ControlError:
+                    if not functions:
+                        continue
+                    detail = {}
+            if not is_lighting(device, detail, functions):
                 continue
-            rgb = "colour_data" in functions or "colour_data_v2" in functions
-            by_slot["a60" if rgb else "a65"].append((device, detail, functions))
-        if any(len(items) != 1 for items in by_slot.values()):
-            raise ControlError("Impossible d'associer automatiquement une seule ampoule blanche et une seule RGB. Les appareils reçus sont conservés.")
-        config = self.store.load()
-        for item in config["devices"]:
-            device, detail, functions = by_slot[item["slot"]][0]
-            discovered_ip = item.get("ip", "") if item.get("lsc_local_available") else ""
-            item.update(name=device["name"].strip(), device_id=device["devId"],
-                        ip=discovered_ip or detail.get("ip", ""), version=detail.get("pv", "3.3"),
-                        lsc_timezone=device.get("timezoneId", "Europe/Paris"),
+            item = dict(old)
+            slot = old.get("slot") or "light_" + hashlib.sha256(str(device_id).encode()).hexdigest()[:16]
+            discovered_ip = old.get("ip", "") if old.get("lsc_local_available") else ""
+            item.update(slot=slot, name=str(device.get("name") or "Éclairage").strip(), device_id=device_id,
+                        category=device.get("category", detail.get("category", old.get("category", ""))),
+                        ip=discovered_ip or detail.get("ip", old.get("ip", "")),
+                        version=str(detail.get("pv", old.get("version", "3.3"))),
+                        lsc_timezone=device.get("timezoneId", old.get("lsc_timezone", "Europe/Paris")),
                         lsc_home_id=device["_home_id"], lsc_functions=functions)
-            if detail.get("localKey"):
-                self.store.set_secret("local:" + item["slot"], detail["localKey"])
+            item["rgb"] = capabilities(item)["rgb"]
+            key = detail.get("localKey") or device.get("localKey") or self.store.secret("lsc_local:" + str(device_id))
+            if key:
+                self.store.set_secret("local:" + slot, key)
+            lights.append(item)
+            accepted.append(device)
+        config["devices"] = lights
         config["mode"], config["lsc_region"] = "lsc", self.region
         self.store.save(config)
-        return [device for group in by_slot.values() for device, _, _ in group]
+        self.remember_devices(accepted)
+        return accepted
 
     def detail(self, item):
         if not self.connected:

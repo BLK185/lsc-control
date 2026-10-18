@@ -3,20 +3,20 @@
 **Vos lumières LSC, dans une fenêtre et près de l’horloge Windows.**
 
 [![Windows](https://github.com/BLK185/lsc-control/actions/workflows/windows.yml/badge.svg)](https://github.com/BLK185/lsc-control/actions/workflows/windows.yml)
-[![Version](https://img.shields.io/badge/version-0.1.0-8A00FC)](https://github.com/BLK185/lsc-control/releases)
+[![Version](https://img.shields.io/badge/version-0.2.0-8A00FC)](https://github.com/BLK185/lsc-control/releases)
 [![Licence MIT](https://img.shields.io/badge/licence-MIT-51007A)](LICENSE)
 
-Une application de bureau pour deux ampoules déjà associées à LSC Smart Connect : **A65 CCT** et **A60 RGB-CCT**. L’objectif est de retrouver les réglages du téléphone, les commandes rapides et le planning partagé, sans imposer de migration vers une autre application.
+Une application de bureau pour les **éclairages enregistrés dans votre compte LSC Smart Connect** : ampoules, rubans et luminaires reconnus. Les A65 CCT et A60 RGB-CCT ont servi aux premiers essais. L’objectif est de retrouver les réglages du téléphone, les commandes rapides et le planning partagé, sans imposer de migration vers une autre application.
 
 Projet personnel développé avec **OpenAI Codex**, avec l’aide de **REA (Reverse Engineer Anything)** pour l’analyse d’interopérabilité. Il n’est ni édité ni certifié par LSC, Action ou Tuya.
 
 ![Interface Windows — données de démonstration](docs/images/windows.png)
 
-## Première version Windows
+## Version Windows
 
 Télécharger l’[installateur ou l’archive portable dans les releases](https://github.com/BLK185/lsc-control/releases). L’installateur s’utilise sans droits administrateur. Le programme n’est pas signé numériquement ; les empreintes SHA-256 sont jointes à chaque version.
 
-**La version publique n’embarque aucun module privé de connexion au cloud.** Le QR code LSC nécessite l’import local d’un module compatible fourni séparément par l’utilisateur dans un cadre autorisé. Sans ce module, la démonstration et le mode local avancé restent disponibles. Aucun mot de passe, compte partagé ou identité fabricant n’est livré.
+**La version publique n’embarque aucun module privé de connexion au cloud.** Le QR code LSC nécessite l’import local d’un module compatible fourni séparément par l’utilisateur dans un cadre autorisé. Sans ce module, la démonstration reste disponible ; les anciens profils locaux sont conservés, mais leur éditeur technique a été retiré. Aucun mot de passe, compte partagé ou identité fabricant n’est livré.
 
 → [Installation et configuration Windows](docs/INSTALLATION_WINDOWS.md)
 
@@ -25,7 +25,10 @@ Télécharger l’[installateur ou l’archive portable dans les releases](https
 | Fonction | État |
 | --- | --- |
 | Marche/arrêt, luminosité, blancs chaud/froid | Implémenté |
-| Couleur et saturation sur l’A60 RGB-CCT | Implémenté |
+| Couleur et saturation, selon le schéma de l’éclairage | Implémenté ; essais physiques sur l’A60 RGB-CCT |
+| Liste des éclairages du compte, ajouts/retraits/renommages | Synchronisation automatique environ toutes les 30 s, application ouverte ; bouton Synchroniser pour forcer |
+| Filtrage Lighting, exclusion HDMI et appareils non lumineux | Implémenté selon catégorie et fonctions ; autres modèles à valider physiquement |
+| Appairage d’un nouvel éclairage | Depuis LSC mobile, puis synchronisation Windows ; appairage Windows natif non livré |
 | Icône de notification, commandes individuelles et groupées | Implémenté |
 | Compte à rebours interne à l’ampoule, jusqu’à 24 h | Implémenté et confirmé par le propriétaire sur la RGB |
 | Lecture, ajout, modification, activation et suppression du planning LSC | Implémenté et confirmé par le propriétaire |
@@ -37,7 +40,7 @@ Télécharger l’[installateur ou l’archive portable dans les releases](https
 
 Les changements du téléphone sont repris lors des lectures d’état. Le planning reste celui du compte LSC : aucun ordonnanceur parallèle n’est créé sur le PC. Le compte à rebours et les horaires continuent sans laisser l’ordinateur allumé.
 
-Les scènes non reçues du compte utilisent des ambiances proposées ; l’application ne prétend pas importer tout le catalogue personnalisé du téléphone. La compatibilité d’autres modèles n’est pas établie.
+Les scènes non reçues du compte utilisent des ambiances proposées ; l’application ne prétend pas importer tout le catalogue personnalisé du téléphone. Les commandes visibles dépendent des fonctions modifiables déclarées par chaque appareil. Les catégories d’éclairage standard sont reconnues ; un schéma absent ou inconnu peut empêcher la prise en charge. La compatibilité physique de tous les modèles du catalogue n’est pas établie.
 
 ## Une interface simple
 
@@ -68,7 +71,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m unittest discover -s app -p "test_*.py"
 ```
 
-**90 tests automatiques** couvrent transports, conversions, planning, stockage des sessions, import privé, interaction des panneaux, saisie au clic et commandes du menu. Ils n’utilisent aucun compte réel. Les validations physiques du propriétaire sont indiquées séparément.
+**113 tests automatiques** couvrent transports, conversions, planning, stockage des sessions, import privé, interaction des panneaux, saisie au clic, catalogue dynamique et ciblage réel de la file de commandes groupées. Ils n’utilisent aucun compte réel. Les validations physiques du propriétaire sont indiquées séparément.
 
 Pour compiler l’installateur public, installer [Inno Setup 6](https://jrsoftware.org/isdl.php), puis :
 

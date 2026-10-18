@@ -103,7 +103,7 @@ class LSCLogin(QDialog):
         self.restore_once = False
         if self.account.connected:
             self.image.setText("Session LSC déjà connectée")
-            self.status.setText("Lecture et association des deux ampoules…")
+            self.status.setText("Synchronisation des éclairages du compte…")
             self.submit("devices", self.account.prepare_bulbs)
         else:
             self.submit("create", self.account.create_qr)

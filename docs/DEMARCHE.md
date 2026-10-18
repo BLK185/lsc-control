@@ -16,6 +16,7 @@ Le transport Python a été comparé à la primitive native observée sur 20 cas
 
 ## Choix de conception
 
+- **Catalogue du compte** : synchroniser les éclairages par identifiant stable, conserver leur profil après renommage et retirer les appareils absents d’un inventaire complet. Les catégories et schémas servent à filtrer Lighting et à proposer les réglages disponibles.
 - **Pas de migration imposée** : conserver les ampoules dans LSC Smart Connect et lire les programmations existantes.
 - **Local puis cloud** : associer les appareils par leur identifiant, utiliser le réseau local lorsqu’il répond, puis revenir au cloud si nécessaire.
 - **Une commande est vérifiée** : relire l’état de l’appareil ; ne pas considérer une simple acceptation HTTP comme une validation physique.
@@ -29,11 +30,17 @@ Les retours du propriétaire confirment marche/arrêt, blancs, couleurs et compt
 
 Les notifications Windows observent les changements marche/arrêt entre deux lectures. Elles ne constituent pas un abonnement aux événements push LSC et n’attribuent pas une variation à une programmation précise. La compatibilité d’autres modèles, la distribution cloud sans configuration et le déploiement Mac restent ouverts.
 
+## Appairage et synchronisation
+
+La version 0.2.0 sépare l’inventaire des appareils déjà associés de leur appairage initial. Les ajouts réalisés sur téléphone remontent automatiquement dans Windows. REA et la documentation primaire ont servi à examiner l’appairage, sans réinitialiser de lampe ni créer de jeton réel. La piste AP Wi-Fi nécessite un jeton de foyer, le transport UDP chiffré et la gestion Wi-Fi Windows ; les modes EZ, BLE, Zigbee et Matter ne sont pas interchangeables. Aucun appairage natif non validé n’est présenté comme fonction disponible.
+
 ## Références techniques
 
 - [REA](https://github.com/morluto/rea) et ses outils Android, JavaScript/Electron et natifs.
 - [Tuya : connexion QR utilisateur](https://developer.tuya.com/en/docs/app-development/userqrlogin?id=Kceugtdh6y3h9).
 - [Tuya : opérations de planning du SDK de panneaux](https://github.com/tuya/tuya-panel-sdk/blob/main/packages/tuya-panel-api/src/common/timer.ts).
+- [Tuya : catégories Lighting](https://developer.tuya.com/en/docs/iot/oemapp-light?id=Kb77kja5woao6).
+- [Tuya : appairage AP Wi-Fi](https://developer.tuya.com/en/docs/app-development/hotspot-mode?id=Kaixk6wxla1oy).
 - [TinyTuya](https://github.com/jasonacox/tinytuya), pour la communication LAN.
 
 Ce dépôt documente un travail d’interopérabilité personnelle. Il ne revendique aucun partenariat avec LSC, Action, Tuya, OpenAI ou REA.

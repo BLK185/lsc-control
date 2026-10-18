@@ -72,7 +72,7 @@ class Store:
 
     def load(self):
         if not self.path.exists():
-            return {"mode": "local", "region": "eu", "devices": [dict(d) for d in DEFAULTS]}
+            return {"mode": "lsc", "region": "eu", "devices": []}
         result = json.loads(self.path.read_text(encoding="utf-8"))
         if result.get("mode") not in ("local", "cloud", "lsc"):
             raise ControlError("Mode de connexion invalide.")
@@ -234,7 +234,9 @@ def cloud_state(values, functions):
             except (ValueError, TypeError, AttributeError):
                 pass
         return None
-    mode = values.get("work_mode", "white")
+    mode = values.get("work_mode") or ("white" if any(c in functions for c in ("bright_value", "bright_value_v2", "temp_value", "temp_value_v2")) else "colour")
+    if mode == "color":
+        mode = "colour"
     colour = decode_hsv(values.get("colour_data_v2")) if "colour_data_v2" in values else decode_hsv(values.get("colour_data"), 255)
     return {"power": power, "mode": mode, "hsv": colour,
             "countdown":values.get("countdown",values.get("countdown_1")),
@@ -251,11 +253,39 @@ class Controller:
         self.cloud_signature = None
         self.function_cache = {}
         self.local_retry_after = {}
+        self.inventory_checked = self.schema_checked = 0
         self.demo_state = {d["slot"]: {"power": False, "brightness": 100, "temperature": 20, "mode": "white", "countdown":0, "hsv": {"h": 0, "s": 100, "v": 100}} for d in DEFAULTS}
+
+    def devices(self):
+        devices = self.store.load().get("devices", [])
+        if self.demo and not devices:
+            devices = DEFAULTS
+        return [dict(d) for d in devices]
+
+    def synchronize_lights(self, force=False):
+        with self.lock:
+            config = self.store.load()
+            if self.demo or config["mode"] != "lsc":
+                return
+            now = time.monotonic()
+            if not force and self.inventory_checked and now - self.inventory_checked < 30:
+                return
+            self.inventory_checked = now
+            from lsc_account import LSCAccount
+            account = LSCAccount(self.store, config.get("lsc_region", "eu"))
+            try:
+                if not account.connected:
+                    return
+                full = force or not self.schema_checked or now - self.schema_checked >= 300
+                account.prepare_bulbs(refresh_schema=full)
+                if full:
+                    self.schema_checked = now
+            finally:
+                account.close()
 
     def _device(self, slot):
         config = self.store.load()
-        for item in config["devices"]:
+        for item in self.devices():
             if item["slot"] == slot:
                 return config, item
         raise ControlError("Ampoule inconnue.")
@@ -296,6 +326,7 @@ class Controller:
             config, item = self._device(slot)
             if self.demo:
                 from light_features import scene_options
+                self.demo_state.setdefault(slot, dict(power=False,brightness=100,temperature=20,mode="white",countdown=0,hsv=dict(h=0,s=100,v=100)))
                 return dict(json.loads(json.dumps(self.demo_state[slot])), slot=slot, demo=True, scenes=scene_options(item["rgb"]))
             if not item["device_id"]:
                 raise ControlError("Configure d'abord l'identifiant de cette ampoule.")
@@ -342,6 +373,7 @@ class Controller:
             config, item = self._device(slot)
             validate_command(action, value, item["rgb"])
             if self.demo:
+                self.status(slot)
                 state = self.demo_state[slot]
                 state[action] = value
                 if action == "colour":
