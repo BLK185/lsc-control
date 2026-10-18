@@ -1,0 +1,32 @@
+name: Windows
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test-and-build:
+    runs-on: windows-latest
+    env:
+      QT_QPA_PLATFORM: offscreen
+      LSC_CONTROL_HOME: ${{ github.workspace }}\test-profile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: app/requirements-windows.lock.txt
+      - run: python -m pip install -r app/requirements-windows.lock.txt
+      - run: python -m unittest discover -s app -p "test_*.py"
+      - run: python tools/check_publication.py --tracked
+      - run: python tools/build_windows.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LSC-Control-windows-x64
+          path: |
+            release/*-setup.exe
+            release/*-portable.zip
+            release/SHA256SUMS.txt
+          if-no-files-found: error
