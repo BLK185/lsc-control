@@ -13,7 +13,8 @@ struct ControlsProbe {
         try await ControlsClient.setPower("a60", value: true)
         guard try await ControlsClient.power("a60") else { fatalError("Power readback failed") }
         try await ControlsClient.setPower("all", value: false)
-        guard try await !ControlsClient.power("all") else { fatalError("Group command failed") }
+        let allOn = try await ControlsClient.power("all")
+        guard !allOn else { fatalError("Group command failed") }
         do {
             let _ = try await ControlsClient.lights(code: String(repeating: "x", count: 43))
             fatalError("Invalid capability was accepted")

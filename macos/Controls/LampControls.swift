@@ -37,7 +37,7 @@ struct LightConfiguration: ControlConfigurationIntent {
     }
 }
 
-struct LampValue {
+struct LampValue: Sendable {
     let id: String
     let name: String
     let power: Bool
@@ -54,8 +54,12 @@ struct LampProvider: AppIntentControlValueProvider {
         guard let light = configuration.light else {
             throw ControlsError.message("Modifie cette commande pour choisir un éclairage.")
         }
-        let power = try await ControlsClient.power(light.id, code: configuration.code)
-        return LampValue(id: light.id, name: light.name, power: power, code: configuration.code)
+        let records = try await ControlsClient.lights(code: configuration.code)
+        guard let current = records.first(where: { $0.id == light.id }) else {
+            throw ControlsError.message("Cet éclairage n’est plus dans le compte. Modifie la commande.")
+        }
+        let power = try await ControlsClient.power(current.id, code: configuration.code)
+        return LampValue(id: current.id, name: current.name, power: power, code: configuration.code)
     }
 }
 
@@ -82,7 +86,7 @@ struct LampControl: ControlWidget {
                                 action: SetLampPower(identifier: lamp.id, code: lamp.code)) { isOn in
                 Label(isOn ? "Allumé" : "Éteint", systemImage: "lightbulb.fill")
             }
-            .tint(.purple)
+            .tint(Color(red: 138.0 / 255, green: 0, blue: 252.0 / 255))
         }
         .displayName("Éclairage LSC")
         .description("Allumer ou éteindre un éclairage du compte, ou tous ensemble. LSC Control doit rester ouvert.")

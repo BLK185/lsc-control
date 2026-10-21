@@ -58,4 +58,5 @@ jobs:
             ${{ runner.temp }}/macos-demo.png
             ${{ runner.temp }}/connection-check.json
             ${{ runner.temp }}/macos-native-check.json
+            ${{ runner.temp }}/controls-check.json
           if-no-files-found: error

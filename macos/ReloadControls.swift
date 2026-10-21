@@ -1,5 +1,7 @@
 import Foundation
 import WidgetKit
 
-ControlCenter.shared.reloadControls(ofKind: "fr.carfr.LSCControl.Power")
-RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+@_cdecl("lsc_reload_controls")
+public func reloadControls() {
+    ControlCenter.shared.reloadControls(ofKind: "fr.carfr.LSCControl.Power")
+}

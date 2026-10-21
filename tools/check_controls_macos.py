@@ -27,9 +27,18 @@ def main():
     build = ROOT / "app/build/macos"
     sdk = subprocess.check_output(["xcrun", "--sdk", "macosx", "--show-sdk-path"], text=True).strip()
     probe = build / "ControlsProbe"
+    probe_info = build / "ControlsProbe-Info.plist"
+    probe_info.write_bytes(plistlib.dumps({
+        "CFBundleIdentifier": "fr.carfr.LSCControl.ControlsProbe",
+        "NSAppTransportSecurity": {"NSAllowsLocalNetworking": True},
+    }))
     subprocess.run(["xcrun", "swiftc", "-parse-as-library", "-sdk", sdk,
                     "-target", "arm64-apple-macos26.0", str(ROOT / "macos/Shared/ControlsClient.swift"),
-                    str(ROOT / "macos/Tests/Probe.swift"), "-o", str(probe)], check=True)
+                    str(ROOT / "macos/Tests/Probe.swift"),
+                    "-Xlinker", "-sectcreate", "-Xlinker", "__TEXT", "-Xlinker", "__info_plist",
+                    "-Xlinker", str(probe_info), "-o", str(probe)], check=True)
+    subprocess.run(["codesign", "--force", "--sign", "-", "--identifier", "fr.carfr.LSCControl.ControlsProbe",
+                    "--entitlements", str(ROOT / "macos/Controls.entitlements"), str(probe)], check=True)
     token = secrets.token_urlsafe(32)
     server = create_server(Controller(DemoStore(), demo=True), token)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -51,6 +60,9 @@ def main():
         raise RuntimeError("WidgetKit extension not registered")
     info = plistlib.loads((extension / "Contents/Info.plist").read_bytes())
     assert info["NSExtension"]["NSExtensionPointIdentifier"] == "com.apple.widgetkit-extension"
+    report = {"sandboxed_swift_client": True, "extension_registered": True,
+              "control_center_ui_validated": False, "app_groups_used": False}
+    (Path(os.environ["RUNNER_TEMP"]) / "controls-check.json").write_text(json.dumps(report), encoding="utf-8")
     print("Signed sandboxed WidgetKit extension registered on macOS; Control Center UI requires user validation.")
 
 

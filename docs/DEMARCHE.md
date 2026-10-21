@@ -70,3 +70,9 @@ Le transport Python a obtenu un QR réel sans session à partir de cette nouvell
 - [TinyTuya](https://github.com/jasonacox/tinytuya), pour la communication LAN.
 
 Ce dépôt documente un travail d’interopérabilité personnelle. Il ne revendique aucun partenariat avec LSC, Action, Tuya, OpenAI ou REA.
+
+## Centre de contrôle expérimental — 21 octobre
+
+La première conception utilisait un groupe d’applications partagé, lié à la signature Apple. La version expérimentale emploie une autre architecture : une extension WidgetKit dans son propre bac à sable, associée par un code aléatoire à une API limitée au Mac. Le code autorise seulement la liste minimale des lumières et leur marche/arrêt. La session LSC et les clés restent dans le Trousseau de l’app principale. Les commandes choisissent les éclairages de l’inventaire actuel, sans conserver les noms des deux modèles initiaux.
+
+Le client Swift est testé contre des lumières fictives. La compilation et l’enregistrement de l’extension par macOS ne prouvent pas encore son affichage ni son exécution par le Centre de contrôle ; cette dernière étape nécessite le Mac du propriétaire. Aucun réglage de sécurité du système n’est désactivé. Le fonctionnement général de l’app et de sa barre des menus a, lui, été confirmé sur ce Mac M4.

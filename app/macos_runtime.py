@@ -5,7 +5,7 @@ from pathlib import Path
 import secrets
 import platform
 import time
-from PySide6.QtCore import QIODevice, QObject, QProcess, QTimer, Signal
+from PySide6.QtCore import QIODevice, QObject, QTimer, Signal
 from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
 from core import HOME, ControlError
@@ -21,7 +21,7 @@ class MacIntegration(QObject):
         self.controls = ControlsService(window.controller, self.external_change.emit)
         self.external_change.connect(self.refresh_external)
         self.control_signature = None
-        self.reload_process = QProcess(self)
+        self.reload_library = None
         self.last_reload = 0
         self.controls_available = int(platform.mac_ver()[0].split('.')[0] or '0') >= 26
         self.server = QLocalServer(self)
@@ -59,7 +59,7 @@ class MacIntegration(QObject):
         return True
 
     def refresh_external(self):
-        if not self.window.busy:
+        if not self.window.busy and not self.window.exiting:
             self.window.refresh(observe=True)
 
     def updated(self):
@@ -72,15 +72,24 @@ class MacIntegration(QObject):
     def reload_controls(self):
         if not self.controls_available:
             return
-        helper = Path(__file__).resolve().parent / 'native/LSCControlSignals'
+        helper = Path(__file__).resolve().parent / 'native/libLSCControlSignals.dylib'
         if not helper.is_file():
             return
         if time.monotonic() - self.last_reload < 2:
             QTimer.singleShot(2100, self.reload_controls)
             return
-        if self.reload_process.state() == QProcess.ProcessState.NotRunning:
-            self.last_reload = time.monotonic()
-            self.reload_process.start(str(helper), [])
+        self.last_reload = time.monotonic()
+        try:
+            if self.reload_library is None:
+                import ctypes
+                self.reload_library = ctypes.CDLL(str(helper))
+                self.reload_library.lsc_reload_controls.argtypes = []
+                self.reload_library.lsc_reload_controls.restype = None
+            # Run in the containing app process, so WidgetKit identifies the
+            # correct app bundle. A separate CLI would have a different caller.
+            self.reload_library.lsc_reload_controls()
+        except (OSError, AttributeError):
+            self.reload_library = None
 
     def configure_controls(self):
         from PySide6.QtWidgets import QApplication, QDialog, QLabel, QLineEdit, QPushButton, QVBoxLayout
@@ -143,8 +152,6 @@ class MacIntegration(QObject):
 
     def close(self):
         self.controls.close()
-        if self.reload_process.state() != QProcess.ProcessState.NotRunning:
-            self.reload_process.waitForFinished(1000)
         self.server.close()
 
 
@@ -165,12 +172,17 @@ def smoke_check(window, report_path):
         report["close_keeps_menu"] = not window.isVisible() and window.tray.isVisible()
         window.open_window()
         report["reopen_works"] = window.isVisible()
+        if window.mac_integration.controls_available:
+            window.mac_integration.reload_controls()
+            report["native_reload_loaded"] = window.mac_integration.reload_library is not None
         secret = secrets.token_urlsafe(32)
         keyring.set_password("LSC Control CI", name, secret)
         stored = True
         report["keychain_roundtrip"] = keyring.get_password("LSC Control CI", name) == secret
         report["ok"] = all(report.get(key) is True for key in (
             "menu_bar_available", "close_keeps_menu", "reopen_works", "keychain_roundtrip"))
+        if window.mac_integration.controls_available:
+            report["ok"] = report["ok"] and report["native_reload_loaded"]
     except Exception:
         report["ok"] = False
     finally:

@@ -31,7 +31,7 @@ def local_secrets():
     values=set()
     def add(value):
         if isinstance(value,str) and len(value)>=8: values.add(value)
-    for name in ("cloud_id","cloud_secret","lsc_session:eu","lsc_session:us","lsc_session:cn"):
+    for name in ("cloud_id","cloud_secret","lsc_session:eu","lsc_session:us","lsc_session:cn","macos_control_center"):
         raw=store.secret(name)
         if name.startswith("lsc_session:") and raw:
             for value in json.loads(raw).values(): add(value)

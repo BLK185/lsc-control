@@ -31,7 +31,15 @@ La fenêtre reprend couleurs, blancs, scènes disponibles, compte à rebours et 
 
 La préparation Mac extrait les ressources du client officiel et les lit en Python ; elle **n’exécute ni Electron Windows ni la DLL fabricant**. Un QR anonyme a été obtenu avec cette préparation sans restaurer de session. L’autorisation sur le téléphone et les commandes physiques restent à vérifier sur le Mac du propriétaire.
 
-**Préversion sans notarisation Apple** : la première ouverture peut demander **Réglages Système → Confidentialité et sécurité → Ouvrir quand même**. L’extension native du Centre de contrôle n’est pas livrée : elle reste à signer et valider avec un groupe d’applications autorisé par Apple. L’icône de barre des menus est disponible.
+**Préversion sans notarisation Apple** : la première ouverture peut demander **Réglages Système → Confidentialité et sécurité → Ouvrir quand même**. La version 0.4.0 fournit l’icône de barre des menus ; elle a été validée sur Mac M4 par le propriétaire, y compris les commandes et le planning partagé.
+
+### Centre de contrôle — préversion 0.5.0 expérimentale
+
+Une [préversion séparée](https://github.com/BLK185/lsc-control/releases/tag/v0.5.0-beta.1) ajoute une extension WidgetKit pour macOS 26 et suivants. La commande **Éclairage LSC** permet de choisir n’importe quel éclairage du compte ou tous ensemble, puis d’en régler le marche/arrêt. Les autres réglages restent dans l’app.
+
+La première association utilise **LSC Control → Centre de contrôle… → Copier le code de connexion**, puis ce code dans la configuration de la commande native. Ce code local donne uniquement accès aux lumières et à leur marche/arrêt. Aucun groupe d’applications Apple ni partage de la session LSC n’est nécessaire. L’app doit rester active dans la barre des menus.
+
+Cette extension utilise une signature locale sans notarisation. Sa compilation, son client Swift et son enregistrement sont vérifiés en CI ; sa présence et son exécution dans le vrai Centre de contrôle restent à confirmer sur le Mac du propriétaire. Cette préversion ne remplace pas cette validation par un simple succès de compilation.
 
 → [Installation et configuration macOS](docs/INSTALLATION_MACOS.md)
 
@@ -53,7 +61,7 @@ La préparation Mac extrait les ressources du client officiel et les lit en Pyth
 | Contrôle LAN rapide et repli cloud | Implémenté ; cloud selon configuration et disponibilité du service |
 | Scènes et conservation des dernières variantes reçues | Implémenté ; validation physique complète encore à faire |
 | Notifications Windows des changements marche/arrêt observés | Disponible ; ce ne sont pas les événements push LSC |
-| macOS Apple Silicon | Application et barre des menus dans la préversion 0.4.0 ; Centre de contrôle natif en attente de signature et validation |
+| macOS Apple Silicon | App et barre des menus 0.4.0 validées sur Mac M4 ; Centre de contrôle 0.5.0 expérimental à valider sur ce Mac |
 
 Les changements du téléphone sont repris lors des lectures d’état. Le planning reste celui du compte LSC : aucun ordonnanceur parallèle n’est créé sur le PC. Le compte à rebours et les horaires continuent sans laisser l’ordinateur allumé.
 
@@ -90,7 +98,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m unittest discover -s app -p "test_*.py"
 ```
 
-**151 tests automatiques** couvrent transports, conversions, planning, stockage des sessions, import privé, interaction des panneaux, saisie au clic, catalogue dynamique, ciblage de la file groupée, intégrité des téléchargements, annulation et préparation de connexion. Ils n’utilisent aucun compte réel. Les validations physiques du propriétaire sont indiquées séparément.
+**160 tests automatiques** couvrent transports, conversions, planning, stockage des sessions, import privé, interaction des panneaux, saisie au clic, catalogue dynamique, ciblage de la file groupée, intégrité des téléchargements, annulation et préparation de connexion. Ils n’utilisent aucun compte réel. Les validations physiques du propriétaire sont indiquées séparément.
 
 Pour compiler l’installateur public, installer [Inno Setup 6](https://jrsoftware.org/isdl.php), puis :
 

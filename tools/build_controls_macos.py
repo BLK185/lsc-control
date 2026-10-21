@@ -14,9 +14,9 @@ def build_native(build):
     sdk = subprocess.check_output(["xcrun", "--sdk", "macosx", "--show-sdk-path"], text=True).strip()
     native = build / "native"
     native.mkdir(exist_ok=True)
-    subprocess.run(["xcrun", "swiftc", "-O", "-sdk", sdk, "-target", "arm64-apple-macos26.0",
-                    str(ROOT / "macos/ReloadControls.swift"), "-o", str(native / "LSCControlSignals")], check=True)
+    subprocess.run(["xcrun", "swiftc", "-O", "-emit-library", "-sdk", sdk, "-target", "arm64-apple-macos26.0",
+                    str(ROOT / "macos/ReloadControls.swift"), "-o", str(native / "libLSCControlSignals.dylib")], check=True)
     extension = build / "xcode/Build/Products/Release/LSCControls.appex"
     if not extension.is_dir():
         raise RuntimeError("WidgetKit extension was not built")
-    return extension, native / "LSCControlSignals"
+    return extension, native / "libLSCControlSignals.dylib"

@@ -1,5 +1,15 @@
 # Journal de développement
 
+## 0.5.0 beta — Centre de contrôle natif — 21 octobre 2026
+
+- Extension WidgetKit macOS 26+ configurable sur l’inventaire du compte : marche/arrêt d’un éclairage ou de tous ensemble.
+- Association par code local distinct de la session LSC, sans groupe d’applications ni certificat Developer ID ; rotation du code pour révoquer les anciens accès.
+- API liée à 127.0.0.1, uniquement inventaire minimal et marche/arrêt, authentification obligatoire, refus des origines navigateur.
+- Actualisation native après changements observés par l’app.
+- 160 tests ; compilation et enregistrement de l’extension vérifiés sur macOS. L’affichage et l’exécution dans le Centre de contrôle du propriétaire restent à confirmer.
+- Le propriétaire confirme le bon fonctionnement de l’app macOS 0.4.0 sur son Mac M4.
+
+
 ## 0.4.0 — macOS Apple Silicon — 21 octobre 2026
 
 - Application autonome ARM64 et DMG pour Mac M1 et suivants, sans Rosetta.
