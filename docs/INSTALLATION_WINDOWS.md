@@ -4,7 +4,7 @@ Cette version vise Windows 10/11 x64. L’application est personnelle, expérime
 
 ## Installation
 
-1. Télécharger `LSC-Control-0.3.0-windows-x64-setup.exe` dans les [releases](https://github.com/BLK185/lsc-control/releases).
+1. Télécharger `LSC-Control-0.3.1-windows-x64-setup.exe` dans les [releases](https://github.com/BLK185/lsc-control/releases).
 2. Lancer l’installateur. L’installation est propre à l’utilisateur et ne demande pas de droits administrateur.
 3. Ouvrir LSC Control depuis le menu Démarrer. Un raccourci de bureau est facultatif.
 

@@ -255,5 +255,23 @@ class WindowCatalogTests(unittest.TestCase):
         self.assertEqual(self.window.cards,{})
         self.assertFalse(self.window.empty.isHidden())
 
+    def test_read_in_progress_cannot_reset_a_just_released_slider(self):
+        from PySide6.QtCore import QPoint, Qt
+        card = self.window.cards['a60']
+        slider = card.white_brightness
+        self.window.busy = True
+        point = QPoint(slider.width() * 3 // 4, slider.height() // 2)
+        QTest.mouseClick(slider, Qt.MouseButton.LeftButton, pos=point)
+        desired = slider.value()
+        self.assertGreater(desired, 50)
+        self.assertIn(('a60', 'white'), self.window.pending_commands)
+        with patch('desktop.QTimer.singleShot') as schedule:
+            self.window.complete('observe', ([dict(slot='a60', power=False, mode='white', brightness=1)], None))
+        self.assertEqual(slider.value(), desired)
+        schedule.call_args.args[1]()
+        self.drain()
+        self.assertEqual(slider.value(), desired)
+        self.assertEqual(self.controller.status('a60')['brightness'], desired)
+
 
 if __name__ == '__main__': unittest.main()

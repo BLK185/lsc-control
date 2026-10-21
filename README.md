@@ -3,7 +3,7 @@
 **Vos lumières LSC, dans une fenêtre et près de l’horloge Windows.**
 
 [![Windows](https://github.com/BLK185/lsc-control/actions/workflows/windows.yml/badge.svg)](https://github.com/BLK185/lsc-control/actions/workflows/windows.yml)
-[![Version](https://img.shields.io/badge/version-0.3.0-8A00FC)](https://github.com/BLK185/lsc-control/releases)
+[![Version](https://img.shields.io/badge/version-0.3.1-8A00FC)](https://github.com/BLK185/lsc-control/releases)
 [![Licence MIT](https://img.shields.io/badge/licence-MIT-51007A)](LICENSE)
 
 Une application de bureau pour les **éclairages enregistrés dans votre compte LSC Smart Connect** : ampoules, rubans et luminaires reconnus. Les A65 CCT et A60 RGB-CCT ont servi aux premiers essais. L’objectif est de retrouver les réglages du téléphone, les commandes rapides et le planning partagé, sans imposer de migration vers une autre application.
@@ -48,6 +48,8 @@ Les scènes non reçues du compte utilisent des ambiances proposées ; l’appli
 
 Anthracite, violet profond et accent violet vif. Le minuteur sépare les unités des champs ; un clic sélectionne les chiffres à remplacer. Dans un horaire, heures et minutes s’éditent séparément.
 
+Les curseurs de luminosité et de saturation se règlent par clic ou glissement sur toute la barre. Leur zone de saisie est plus haute que le trait visible ; le curseur suit la souris et les anciennes lectures n’écrasent pas un réglage en attente. Une seule commande est envoyée au relâchement.
+
 Le planning utilise une icône **verte pour allumer**, **rouge pour éteindre**. L’activation de l’horaire est affichée à part.
 
 | Compte à rebours | Planning |
@@ -73,7 +75,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m unittest discover -s app -p "test_*.py"
 ```
 
-**130 tests automatiques** couvrent transports, conversions, planning, stockage des sessions, import privé, interaction des panneaux, saisie au clic, catalogue dynamique, ciblage de la file groupée, intégrité des téléchargements, annulation et préparation de connexion. Ils n’utilisent aucun compte réel. Les validations physiques du propriétaire sont indiquées séparément.
+**141 tests automatiques** couvrent transports, conversions, planning, stockage des sessions, import privé, interaction des panneaux, saisie au clic, catalogue dynamique, ciblage de la file groupée, intégrité des téléchargements, annulation et préparation de connexion. Ils n’utilisent aucun compte réel. Les validations physiques du propriétaire sont indiquées séparément.
 
 Pour compiler l’installateur public, installer [Inno Setup 6](https://jrsoftware.org/isdl.php), puis :
 

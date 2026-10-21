@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (
     QDialog, QDialogButtonBox, QGroupBox, QHBoxLayout, QLabel, QPushButton,
     QSlider, QTabWidget, QVBoxLayout, QWidget,
 )
+from sliders import DirectSlider
 
 
 class LightRing(QWidget):
@@ -188,7 +189,7 @@ class LampCard(QGroupBox):
 
     def slider(self, layout, title, value, minimum):
         label = QLabel(f'{title} · {value} %')
-        slider = QSlider(Qt.Orientation.Horizontal)
+        slider = DirectSlider()
         slider.caption = label
         slider.setRange(minimum, 100)
         slider.setValue(value)
@@ -223,9 +224,9 @@ class LampCard(QGroupBox):
             elif self.rgb and self.tabs.widget(index) is self.colour:
                 self.send_colour()
 
-    def show_state(self, state):
+    def show_state(self, state, preserve_controls=False):
         # Don't overwrite a user's unfinished drag with a background read.
-        if self.white_ring.dragging or self.white_brightness.isSliderDown():
+        if preserve_controls or self.white_ring.dragging or self.white_brightness.isSliderDown():
             return
         if self.rgb and (self.colour_ring.dragging or self.colour_brightness.isSliderDown() or self.saturation.isSliderDown()):
             return

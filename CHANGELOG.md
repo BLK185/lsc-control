@@ -2,6 +2,15 @@
 
 Ce journal reconstitue les étapes à partir des notes du projet et des essais du propriétaire. Il ne prétend pas que les commits GitHub ont été créés ces jours-là : la mise en dépôt a lieu le 18 octobre 2026. Aucune activité n’est inventée pour les jours sans trace.
 
+## 21 octobre 2026 — curseurs directs, v0.3.1
+
+- Clic n’importe où sur la barre de luminosité ou saturation, puis glissement direct ; suppression de l’avancement natif par petits pas.
+- Position calculée avec la géométrie réelle du style Qt ; prise du curseur sans saut et valeurs bornées aux extrémités.
+- Zone de souris de 28 pixels, poignée légèrement agrandie et survol plus clair.
+- Conservation du réglage si une ancienne lecture se termine après le relâchement, avant l’envoi de la commande en attente.
+- Une seule commande au relâchement, avec aperçu immédiat à l’écran.
+- 141 tests, dont clic/glissement sur différentes tailles et styles, limites, disposition inversée, conservation HSV et ancienne lecture en cours.
+
 ## 21 octobre 2026 — connexion sur une installation neuve, v0.3.0
 
 - Remplacement de l’import manuel du module privé par une préparation guidée depuis le client Action officiel, sans redistribuer ses fichiers dans le paquet.

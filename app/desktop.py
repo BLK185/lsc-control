@@ -118,6 +118,9 @@ class Window(QMainWindow):
     def complete(self, context, payload):
         values, error = payload
         self.busy = False
+        # Snapshot before dequeuing: this result predates those user adjustments.
+        waiting_adjustments = {slot for slot, action in self.pending_commands
+                               if action in ("white", "brightness", "temperature", "hsv", "colour")}
         if self.pending_commands:
             (slot, action), value = self.pending_commands.popitem(last=False)
             QTimer.singleShot(0, lambda s=slot, a=action, v=value: self.command(s, a, v))
@@ -157,7 +160,7 @@ class Window(QMainWindow):
             if context == "observe" and self.notifications.isChecked() and previous is not None and previous != state["power"]:
                 self.tray.showMessage("LSC Control", self.cards[slot].title() + (" s'est allumée." if state["power"] else " s'est éteinte."))
             self.last_states[slot] = state["power"]
-            self.cards[slot].show_state(state)
+            self.cards[slot].show_state(state, preserve_controls=slot in waiting_adjustments)
         from tray_menu import state_label
         self.tray.setToolTip("LSC Control\n" + "\n".join(
             card.title() + " : " + state_label(self.device_states.get(slot))

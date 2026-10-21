@@ -116,9 +116,10 @@ def apply_theme(app):
         QPushButton[role="day"] { background: #25202E; border: 1px solid #44394F; border-radius: 8px; padding: 9px 4px; }
         QPushButton[role="day"]:checked { background: #51007A; border-color: #A54DFF; color: white; }
         QPushButton[role="day"]:focus { border-color: #D3B3F0; }
-        QSlider::groove:horizontal { height: 5px; background: #3D3449; border-radius: 2px; }
+        QSlider::groove:horizontal { height: 6px; background: #3D3449; border-radius: 3px; }
         QSlider::sub-page:horizontal { background: #8A00FC; border-radius: 2px; }
-        QSlider::handle:horizontal { background: #D1ACFF; width: 16px; margin: -6px 0; border-radius: 8px; }
+        QSlider::handle:horizontal { background: #D1ACFF; width: 18px; margin: -6px 0; border-radius: 9px; }
+        QSlider::handle:horizontal:hover { background: #E5D1FF; }
         QTabWidget::pane { border: none; background: transparent; }
         QTabBar::tab { background: transparent; color: #AAA5B7; padding: 12px 20px; border-bottom: 2px solid #302A3B; }
         QTabBar::tab:selected { color: #F4F4F6; border-bottom: 2px solid #8A00FC; }
