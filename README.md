@@ -3,7 +3,7 @@
 **Vos lumières LSC, dans une fenêtre et près de l’horloge Windows.**
 
 [![Windows](https://github.com/BLK185/lsc-control/actions/workflows/windows.yml/badge.svg)](https://github.com/BLK185/lsc-control/actions/workflows/windows.yml)
-[![Version](https://img.shields.io/badge/version-0.2.0-8A00FC)](https://github.com/BLK185/lsc-control/releases)
+[![Version](https://img.shields.io/badge/version-0.3.0-8A00FC)](https://github.com/BLK185/lsc-control/releases)
 [![Licence MIT](https://img.shields.io/badge/licence-MIT-51007A)](LICENSE)
 
 Une application de bureau pour les **éclairages enregistrés dans votre compte LSC Smart Connect** : ampoules, rubans et luminaires reconnus. Les A65 CCT et A60 RGB-CCT ont servi aux premiers essais. L’objectif est de retrouver les réglages du téléphone, les commandes rapides et le planning partagé, sans imposer de migration vers une autre application.
@@ -16,7 +16,9 @@ Projet personnel développé avec **OpenAI Codex**, avec l’aide de **REA (Reve
 
 Télécharger l’[installateur ou l’archive portable dans les releases](https://github.com/BLK185/lsc-control/releases). L’installateur s’utilise sans droits administrateur. Le programme n’est pas signé numériquement ; les empreintes SHA-256 sont jointes à chaque version.
 
-**La version publique n’embarque aucun module privé de connexion au cloud.** Le QR code LSC nécessite l’import local d’un module compatible fourni séparément par l’utilisateur dans un cadre autorisé. Sans ce module, la démonstration reste disponible ; les anciens profils locaux sont conservés, mais leur éditeur technique a été retiré. Aucun mot de passe, compte partagé ou identité fabricant n’est livré.
+**La connexion LSC est maintenant préparée au premier lancement.** Ouvrir **Connexion LSC → Préparer la connexion LSC** : l’application télécharge environ 64 Mo depuis les sources officielles Action et 7-Zip, vérifie des empreintes fixes et extrait les composants dans le profil Windows. Les installateurs téléchargés ne sont pas lancés. Scanner ensuite le QR dans LSC Smart Connect et confirmer sur le téléphone. Aucun fichier privé à demander au développeur, aucun mot de passe à saisir dans LSC Control.
+
+Cette interopérabilité utilise localement le composant officiel Battletron 2.0.17 ; elle n’est pas un support officiel de LSC Control par le fabricant. Le téléphone peut afficher **LSC Battletron** lors de l’autorisation. Si Action retire cette version ou modifie le service, une adaptation pourra être nécessaire. Un fichier officiel déjà téléchargé peut aussi être sélectionné, avec les mêmes contrôles d’intégrité.
 
 → [Installation et configuration Windows](docs/INSTALLATION_WINDOWS.md)
 
@@ -32,7 +34,7 @@ Télécharger l’[installateur ou l’archive portable dans les releases](https
 | Icône de notification, commandes individuelles et groupées | Implémenté |
 | Compte à rebours interne à l’ampoule, jusqu’à 24 h | Implémenté et confirmé par le propriétaire sur la RGB |
 | Lecture, ajout, modification, activation et suppression du planning LSC | Implémenté et confirmé par le propriétaire |
-| Connexion QR au compte LSC existant | Fonctionnelle dans l’environnement de développement ; module local requis dans la distribution publique |
+| Connexion QR au compte LSC existant | Préparation locale guidée depuis les sources officielles ; QR serveur vérifié avec un profil sans session ni module privé |
 | Contrôle LAN rapide et repli cloud | Implémenté ; cloud selon configuration et disponibilité du service |
 | Scènes et conservation des dernières variantes reçues | Implémenté ; validation physique complète encore à faire |
 | Notifications Windows des changements marche/arrêt observés | Disponible ; ce ne sont pas les événements push LSC |
@@ -71,7 +73,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m unittest discover -s app -p "test_*.py"
 ```
 
-**113 tests automatiques** couvrent transports, conversions, planning, stockage des sessions, import privé, interaction des panneaux, saisie au clic, catalogue dynamique et ciblage réel de la file de commandes groupées. Ils n’utilisent aucun compte réel. Les validations physiques du propriétaire sont indiquées séparément.
+**130 tests automatiques** couvrent transports, conversions, planning, stockage des sessions, import privé, interaction des panneaux, saisie au clic, catalogue dynamique, ciblage de la file groupée, intégrité des téléchargements, annulation et préparation de connexion. Ils n’utilisent aucun compte réel. Les validations physiques du propriétaire sont indiquées séparément.
 
 Pour compiler l’installateur public, installer [Inno Setup 6](https://jrsoftware.org/isdl.php), puis :
 
@@ -83,6 +85,6 @@ Les fichiers sont produits dans `release/`. Le script ne copie aucune identité 
 
 ## Données et licences
 
-Les sessions et clés des ampoules restent dans le coffre du système ; les paramètres et modules importés restent dans le profil local. Aucun profil du développeur n’est embarqué. Les captures du dépôt sont générées avec des données fictives. Les rapports bruts, APK, exécutables fabricant et identités privées sont exclus.
+Les sessions et clés des ampoules restent dans le coffre du système ; les paramètres et composants préparés restent dans le profil local. Aucun profil du développeur n’est embarqué. Les captures du dépôt sont générées avec des données fictives. Les rapports bruts, APK, exécutables fabricant et identités privées sont exclus du dépôt et des paquets publiés. Le composant officiel téléchargé à la demande reste propre à chaque poste.
 
 Code original sous [licence MIT](LICENSE). Les dépendances conservent leurs licences : [notices tierces](THIRD_PARTY_NOTICES.md).

@@ -294,7 +294,22 @@ def main():
     parser.add_argument("--screenshot")
     parser.add_argument("--lsc-login", action="store_true")
     parser.add_argument("--diagnostic", help="Écrire un diagnostic de connexion sans données secrètes")
+    parser.add_argument("--check-login", help="Vérifier la création d’un QR sans utiliser de session enregistrée")
     args = parser.parse_args()
+    if args.check_login:
+        from lsc_account import LSCAccount
+        store = Store()
+        account = LSCAccount(store, store.load().get("lsc_region", "eu"), restore=False)
+        report = {"saved_session_used": False}
+        try:
+            token = account.create_qr()
+            report.update(ok=bool(token), native_runtime_used=account.portable is None)
+        except ControlError as exc:
+            report.update(ok=False, error=str(exc))
+        finally:
+            account.close()
+        Path(args.check_login).write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+        return 0 if report["ok"] else 1
     if args.diagnostic:
         from lsc_account import LSCAccount, portable_identity_path
         store = Store()

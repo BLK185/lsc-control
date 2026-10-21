@@ -12,7 +12,7 @@ Le projet s’est appuyé sur **[REA — Reverse Engineer Anything](https://gith
 
 Une observation statique a été traitée comme une piste, pas comme une preuve de fonctionnement. Le flux QR a été confirmé par une validation sur téléphone ; les commandes ont été vérifiées par lecture d’état puis par les retours physiques du propriétaire. Les schémas reçus ont servi à choisir les fonctions réellement présentes sur chaque ampoule.
 
-Le transport Python a été comparé à la primitive native observée sur 20 cas de test aléatoires, avec et sans suffixe de session. Cette comparaison a permis de retirer la dépendance d’exécution à Electron et à la DLL fabricant dans l’application de développement. Les identités privées nécessaires au cloud ne sont pas redistribuées dans la version publique.
+Le transport Python a été comparé à la primitive native observée sur 20 cas de test aléatoires, avec et sans suffixe de session. Cette comparaison a permis de retirer la dépendance d’exécution à Electron et à la DLL fabricant dans l’application de développement. Les identités privées ne sont pas redistribuées. Depuis la version 0.3.0, les nouvelles installations préparent localement le client officiel obtenu chez Action, puis utilisent son runtime et notre pont natif restreint. L’import manuel d’un module privé n’est plus nécessaire. Le transport Python autonome reste utilisé pour les profils qui en disposent déjà.
 
 ## Choix de conception
 
@@ -28,7 +28,17 @@ Le transport Python a été comparé à la primitive native observée sur 20 cas
 
 Les retours du propriétaire confirment marche/arrêt, blancs, couleurs et compte à rebours sur la RGB, ainsi que le fonctionnement du planning. Les tests automatiques n’allument aucune ampoule réelle. Les scènes disposent d’un codec et d’une interface, mais toutes leurs variations physiques ne sont pas encore confirmées. Les scènes non reçues utilisent des propositions locales, sans prétendre reconstruire tout le catalogue personnalisé du téléphone.
 
-Les notifications Windows observent les changements marche/arrêt entre deux lectures. Elles ne constituent pas un abonnement aux événements push LSC et n’attribuent pas une variation à une programmation précise. La compatibilité d’autres modèles, la distribution cloud sans configuration et le déploiement Mac restent ouverts.
+Les notifications Windows observent les changements marche/arrêt entre deux lectures. Elles ne constituent pas un abonnement aux événements push LSC et n’attribuent pas une variation à une programmation précise. La compatibilité physique des autres modèles et le déploiement Mac restent ouverts. La préparation initiale dépend de la disponibilité du téléchargement officiel épinglé et du service LSC.
+
+## Connexion distribuable — 21 octobre
+
+Le défaut des premières distributions était réel : le QR dépendait d’un fichier privé absent du paquet. La correction prépare les composants sur chaque poste à partir des sources officielles, sans publier ce fichier ni les données du propriétaire. Le client Battletron 2.0.17 téléchargé chez Action a exactement le SHA-256 de l’artefact déjà examiné avec REA. Le lecteur 7-Zip 26.04 vient du dépôt officiel Igor Pavlov, avec empreinte contrôlée séparément.
+
+Les installateurs sont seulement lus et extraits. Seul le runtime officiel vérifié exécute ensuite notre pont natif, caché, avec une liste bornée d’opérations et sans journaliser les données de compte. La configuration est analysée comme des valeurs littérales, sans exécuter le code JavaScript du paquet. Un identifiant d’installation est généré localement.
+
+Validation : téléchargement et préparation depuis zéro dans un profil séparé, puis création d’un QR serveur sans restaurer de session. Une lecture authentifiée distincte a utilisé le nouveau runtime avec la session existante, sans commande ni modification d’horaire. Cela vérifie la préparation et les appels ; une validation sur téléphone reste nécessaire pour autoriser le compte propre à chaque nouvelle installation.
+
+Ce mécanisme reste une intégration non officielle, liée au protocole et au composant Action connus ; il ne constitue pas une nouvelle identité applicative approuvée par LSC.
 
 ## Appairage et synchronisation
 
@@ -36,6 +46,8 @@ La version 0.2.0 sépare l’inventaire des appareils déjà associés de leur a
 
 ## Références techniques
 
+- [Action : client Battletron officiel](https://www.action.com/fr-fr/brand/battletron-lsc-smart-gaming/).
+- [7-Zip 26.04 officiel](https://github.com/ip7z/7zip/releases/tag/26.04) et [licences](https://www.7-zip.org/license.txt).
 - [REA](https://github.com/morluto/rea) et ses outils Android, JavaScript/Electron et natifs.
 - [Tuya : connexion QR utilisateur](https://developer.tuya.com/en/docs/app-development/userqrlogin?id=Kceugtdh6y3h9).
 - [Tuya : opérations de planning du SDK de panneaux](https://github.com/tuya/tuya-panel-sdk/blob/main/packages/tuya-panel-api/src/common/timer.ts).

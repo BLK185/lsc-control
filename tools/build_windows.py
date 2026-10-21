@@ -10,7 +10,7 @@ import sys
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 
 
 def run(*args, **kwargs):
@@ -54,6 +54,7 @@ def main():
     run(sys.executable,"-m","PyInstaller","--noconfirm","--log-level","WARN","--windowed","--onedir",
         "--name","LSC-Control","--distpath",output/"portable","--workpath",build/"pyinstaller",
         "--specpath",build,"--icon",icon,"--add-data",str(ROOT/"app/assets")+";assets",
+        "--add-data",str(ROOT/"app/lsc_native.cjs")+";.",
         "--collect-all","tinytuya","--collect-all","keyring",ROOT/"app/entry.py",cwd=ROOT/"app")
     bundle=output/"portable/LSC-Control"
     forbidden={"portable-identity.json","client-identity.json","settings.json","devices.json","tinytuya.json","snapshot.json"}

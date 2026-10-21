@@ -1,11 +1,12 @@
 """Real QR authorization dialog. The server token is kept only in memory."""
 import time
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from PySide6.QtCore import QObject, Signal, QTimer, Qt
 from PySide6.QtGui import QImage, QPainter, QPixmap, QColor
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QComboBox, QFileDialog
 from core import ControlError, HOME
-from lsc_account import LSCAccount, portable_identity_path
+from lsc_account import LSCAccount, connection_ready
 
 
 def qr_pixmap(token):
@@ -28,6 +29,7 @@ def qr_pixmap(token):
 
 class LoginSignals(QObject):
     ready = Signal(str, object, object)
+    progress = Signal(str)
 
 
 class LSCLogin(QDialog):
@@ -36,6 +38,7 @@ class LSCLogin(QDialog):
         self.store, self.account, self.token = store, None, None
         self.expires, self.busy, self.closed = 0, False, False
         self.restore_once = True
+        self.cancel = threading.Event()
         self.executor = ThreadPoolExecutor(max_workers=1)
         self.signals = LoginSignals()
         self.signals.ready.connect(self.complete)
@@ -59,10 +62,13 @@ class LSCLogin(QDialog):
         self.refresh_button = QPushButton("Nouveau QR code")
         self.refresh_button.clicked.connect(self.start)
         layout.addWidget(self.refresh_button)
-        self.import_button = QPushButton("Importer le module de connexion…")
-        self.import_button.setToolTip("Le module reste sur cet ordinateur. Il ne doit contenir aucune donnée de compte.")
-        self.import_button.clicked.connect(self.import_module)
-        layout.addWidget(self.import_button)
+        self.prepare_button = QPushButton("Préparer la connexion LSC")
+        self.prepare_button.clicked.connect(self.prepare_connection)
+        layout.addWidget(self.prepare_button)
+        self.installer_button = QPushButton("Choisir le programme officiel déjà téléchargé…")
+        self.installer_button.clicked.connect(self.choose_installer)
+        layout.addWidget(self.installer_button)
+        self.signals.progress.connect(self.status.setText)
         self.done_button = QPushButton("Fermer")
         self.done_button.clicked.connect(self.reject)
         layout.addWidget(self.done_button)
@@ -74,7 +80,8 @@ class LSCLogin(QDialog):
     def submit(self, kind, function):
         self.busy = True
         self.refresh_button.setEnabled(False)
-        self.import_button.setEnabled(False)
+        self.prepare_button.setEnabled(False)
+        self.installer_button.setEnabled(False)
         self.region.setEnabled(False)
         future = self.executor.submit(function)
         def done(job):
@@ -89,9 +96,16 @@ class LSCLogin(QDialog):
     def start(self):
         if self.busy:
             return
-        if portable_identity_path() is None:
-            self.image.setText("Module de connexion requis")
-            self.status.setText("Importe ton module local pour activer la connexion par QR code.")
+        ready = connection_ready()
+        self.prepare_button.setVisible(not ready)
+        self.installer_button.setVisible(not ready)
+        self.refresh_button.setVisible(ready)
+        self.image.setMinimumHeight(285 if ready else 80)
+        if not ready:
+            self.image.setText("Connecte ton compte LSC")
+            self.status.setText("Prépare la connexion, puis scanne le QR code avec LSC Smart Connect.\n"
+                                "Environ 64 Mo sont téléchargés depuis Action et 7-Zip, vérifiés et préparés sur ce PC. Aucun installateur n’est lancé.")
+            self.region.setEnabled(True)
             return
         self.token = None
         self.image.clear()
@@ -108,20 +122,23 @@ class LSCLogin(QDialog):
         else:
             self.submit("create", self.account.create_qr)
 
-    def import_module(self):
+    def prepare_connection(self, installer=None):
         if self.busy:
             return
-        path,_ = QFileDialog.getOpenFileName(self,"Module de connexion LSC","","Module JSON (*.json)")
-        if not path:
+        from connection_setup import prepare
+        self.image.setText("Préparation de la connexion…")
+        self.status.setText("Téléchargement des composants officiels…")
+        def progress(message):
+            if not self.closed:
+                self.signals.progress.emit(message)
+        self.submit("prepare", lambda: prepare(HOME, progress, self.cancel, installer))
+
+    def choose_installer(self):
+        if self.busy:
             return
-        from lsc_identity import import_identity
-        try:
-            import_identity(path,HOME)
-        except ControlError as exc:
-            self.status.setText(str(exc))
-            return
-        self.restore_once = True
-        self.start()
+        path, _ = QFileDialog.getOpenFileName(self, "Programme officiel LSC Battletron 2.0.17", "", "Programme officiel (*.exe)")
+        if path:
+            self.prepare_connection(path)
 
     def poll(self):
         if self.closed or self.busy or not self.token:
@@ -140,7 +157,8 @@ class LSCLogin(QDialog):
     def complete(self, kind, value, error):
         self.busy = False
         self.refresh_button.setEnabled(True)
-        self.import_button.setEnabled(True)
+        self.prepare_button.setEnabled(True)
+        self.installer_button.setEnabled(True)
         if error:
             self.token = None
             self.image.clear()
@@ -148,7 +166,9 @@ class LSCLogin(QDialog):
             self.status.setText(error)
             self.region.setEnabled(True)
             return
-        if kind == "create":
+        if kind == "prepare":
+            self.start()
+        elif kind == "create":
             self.token, self.expires = value, time.monotonic() + 180
             self.image.setPixmap(qr_pixmap(value))
             self.status.setText("Scanne ce QR code depuis LSC Smart Connect.")
@@ -168,6 +188,7 @@ class LSCLogin(QDialog):
 
     def done(self, code):
         self.closed = True
+        self.cancel.set()
         self.timer.stop()
         self.executor.shutdown(wait=False, cancel_futures=True)
         if self.account:

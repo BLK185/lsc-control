@@ -26,15 +26,14 @@ def schema_functions(raw):
 
 
 def runtime_root():
+    from connection_setup import runtime_path
     configured = os.environ.get("LSC_BATTLETRON_HOME")
-    candidates = [Path(configured)] if configured else []
-    for origin in (Path(__file__).resolve(), Path(sys.executable).resolve()):
-        candidates.extend(parent / "tools/battletron" for parent in origin.parents)
+    candidates = ([Path(configured)] if configured else []) + [runtime_path(HOME)]
     for root in candidates:
         if ((root / "app/LSC_Battletron.exe").is_file()
                 and (root / "interop/client-identity.json").is_file()):
             return root.resolve()
-    raise ControlError("Le module LSC Windows n'est pas présent. La connexion sur Mac reste à préparer.")
+    raise ControlError("Prépare la connexion LSC depuis la fenêtre de connexion.")
 
 
 def portable_identity_path():
@@ -42,9 +41,17 @@ def portable_identity_path():
     candidates = [Path(configured)] if configured else []
     candidates.append(HOME / "private/portable-identity.json")
     candidates.append(Path(__file__).resolve().parent / "private/portable-identity.json")
-    for origin in (Path(__file__).resolve(), Path(sys.executable).resolve()):
-        candidates.extend(parent / "tools/battletron/interop/portable-identity.json" for parent in origin.parents)
     return next((path for path in candidates if path.is_file()), None)
+
+
+def connection_ready():
+    if portable_identity_path() is not None:
+        return True
+    try:
+        runtime_root()
+        return True
+    except ControlError:
+        return False
 
 
 def friendly_error(code):

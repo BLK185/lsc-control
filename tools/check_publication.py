@@ -18,13 +18,14 @@ TOKEN=re.compile(rb"(?:gh[pousr]_[A-Za-z0-9]{25,}|github_pat_[A-Za-z0-9_]{30,}|-
 def identity_secrets(identity):
     sensitive={"clientid","appkey","appsecret","deviceid","ttid"}
     values=[identity.get("portable_signing_key")]
+    values.extend(value for key,value in identity.items() if key.lower() in sensitive)
     values.extend(value for key,value in identity.get("defaults",{}).items() if key.lower() in sensitive)
     return [value for value in values if isinstance(value,str) and len(value)>=8]
 
 
 def local_secrets():
     sys.path.insert(0,str(ROOT/"app"))
-    from core import Store,DEFAULTS
+    from core import Store,DEFAULTS,HOME
     store=Store()
     config=store.load()
     values=set()
@@ -43,9 +44,12 @@ def local_secrets():
         generic=next((d["name"] for d in DEFAULTS if d["slot"]==item["slot"]),"")
         if item.get("name") and item["name"]!=generic:
             values.add(item["name"])
-    private=ROOT/"tools/battletron/interop/portable-identity.json"
-    if private.exists():
-        for value in identity_secrets(json.loads(private.read_text(encoding="utf-8"))): add(value)
+    for private in (ROOT/"tools/battletron/interop/portable-identity.json",
+                    ROOT/"tools/battletron/interop/client-identity.json",
+                    HOME/"private/portable-identity.json",
+                    HOME/"connection/battletron-2.0.17/interop/client-identity.json"):
+        if private.exists():
+            for value in identity_secrets(json.loads(private.read_text(encoding="utf-8"))): add(value)
     return [encoded for value in values for encoded in (value.encode(),value.encode("utf-16-le"))]
 
 

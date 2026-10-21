@@ -4,7 +4,7 @@ Cette version vise Windows 10/11 x64. L’application est personnelle, expérime
 
 ## Installation
 
-1. Télécharger `LSC-Control-0.2.0-windows-x64-setup.exe` dans les [releases](https://github.com/BLK185/lsc-control/releases).
+1. Télécharger `LSC-Control-0.3.0-windows-x64-setup.exe` dans les [releases](https://github.com/BLK185/lsc-control/releases).
 2. Lancer l’installateur. L’installation est propre à l’utilisateur et ne demande pas de droits administrateur.
 3. Ouvrir LSC Control depuis le menu Démarrer. Un raccourci de bureau est facultatif.
 
@@ -12,15 +12,18 @@ Le programme et l’installateur ne sont pas signés numériquement. Windows peu
 
 La variante `portable.zip` s’utilise en extrayant **tout** le dossier, puis en ouvrant `LSC-Control.exe`. Le dossier `_internal` doit rester à côté de l’exécutable.
 
-## Connexion LSC : configuration locale nécessaire
+## Connexion LSC au premier lancement
 
-La version publique ne fournit aucune identité applicative privée de fabricant. Elle n’est donc pas prête à se connecter au cloud LSC sans configuration supplémentaire.
+1. Ouvrir **Connexion LSC…**, puis **Préparer la connexion LSC**.
+2. Laisser télécharger environ 64 Mo. Les sources sont le [client officiel Action](https://www.action.com/fr-fr/brand/battletron-lsc-smart-gaming/) et le lecteur d’archives [7-Zip](https://github.com/ip7z/7zip/releases/tag/26.04). Les versions et SHA-256 sont épinglés ; un fichier différent est refusé. Les installateurs sont extraits sans installation système ni demande de droits administrateur.
+3. Dans **LSC Smart Connect → Moi → scanner**, scanner le QR affiché et confirmer. Le téléphone peut nommer le client **LSC Battletron**.
+4. Continuer : les éclairages du compte apparaissent dans la fenêtre et le menu près de l’horloge.
 
-Si vous disposez déjà d’un module de connexion compatible obtenu dans un cadre autorisé, ouvrir **Connexion LSC → Importer le module de connexion** et sélectionner son fichier JSON. Ce module doit contenir uniquement `defaults` et `portable_signing_key`, jamais une session ou une clé d’ampoule. Il est copié dans votre profil local, pas dans le dépôt.
+Aucun module privé n’est à récupérer auprès du développeur. Aucun mot de passe LSC n’est demandé par LSC Control. La session obtenue après votre validation reste dans le coffre Windows.
 
-Ensuite, scanner le QR code depuis **LSC Smart Connect → Moi → scanner**, et confirmer sur le téléphone. Le serveur peut désigner le client comme « LSC Battletron ». Aucun mot de passe LSC n’est demandé par cette application.
+Si le téléchargement Action est indisponible, télécharger le programme depuis sa page officielle puis utiliser **Choisir le programme officiel déjà téléchargé…**. La version acceptée est Battletron **2.0.17**, vérifiée par empreinte. Le lecteur 7-Zip nécessite toujours un téléchargement de 2 Mo. Si cette version est retirée ou si le serveur change, la préparation devra être mise à jour ; elle n’essaie pas de contourner un refus du service.
 
-Sans module, la démonstration reste utilisable. Les anciens profils locaux sont conservés, mais l’éditeur « Réglages avancés » a été supprimé : la connexion au compte et les fonctions déclarées par les éclairages remplacent la saisie des modèles, identifiants et clés. Le dépôt ne fournit ni accès partagé, ni compte de démonstration réel, ni module de connexion à télécharger.
+Les composants officiels restent dans `%USERPROFILE%\.lsc-control\connection`. L’identifiant d’installation est généré sur votre poste ; aucune session, clé d’ampoule ou identité du développeur n’est copiée. Les anciens modules privés compatibles déjà importés restent utilisables.
 
 ## Utilisation
 
@@ -36,6 +39,6 @@ Sans module, la démonstration reste utilisable. Les anciens profils locaux sont
 
 ## Données et désinstallation
 
-Les paramètres restent dans `%USERPROFILE%\.lsc-control`. Les sessions et clés locales sont conservées dans le coffre Windows via keyring, service « LSC Control ». L’installateur ne contient aucun de ces éléments.
+Les paramètres et composants téléchargés restent dans `%USERPROFILE%\.lsc-control`. Les sessions et clés locales sont conservées dans le coffre Windows via keyring, service « LSC Control ». L’installateur ne contient aucun de ces éléments.
 
 La désinstallation depuis les paramètres Windows retire les fichiers du programme et ses raccourcis. Elle conserve volontairement votre profil et vos entrées du coffre ; leur suppression éventuelle se fait séparément. Ne partagez pas ces données dans une issue GitHub.

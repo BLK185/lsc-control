@@ -21,3 +21,8 @@ class PublicationTests(unittest.TestCase):
         result=identity_secrets({"defaults":{"timeZoneId":"Asia/Shanghai","clientId":"synthetic-client-id"},
                                  "portable_signing_key":"synthetic-signing-material"})
         self.assertCountEqual(result,["synthetic-client-id","synthetic-signing-material"])
+
+    def test_native_client_configuration_is_private_too(self):
+        self.assertCountEqual(identity_secrets({'APPKEY':'synthetic-app-key',
+            'APPSECRET':'synthetic-app-secret','defaults':{'timeZoneId':'Europe/Paris'}}),
+            ['synthetic-app-key','synthetic-app-secret'])

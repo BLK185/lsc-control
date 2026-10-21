@@ -45,3 +45,5 @@ DEMANDE-ACCES-LSC.txt
 *.exe
 *.dll
 *.zip
+
+**/connection/

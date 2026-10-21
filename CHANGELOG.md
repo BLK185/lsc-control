@@ -2,6 +2,17 @@
 
 Ce journal reconstitue les étapes à partir des notes du projet et des essais du propriétaire. Il ne prétend pas que les commits GitHub ont été créés ces jours-là : la mise en dépôt a lieu le 18 octobre 2026. Aucune activité n’est inventée pour les jours sans trace.
 
+## 21 octobre 2026 — connexion sur une installation neuve, v0.3.0
+
+- Remplacement de l’import manuel du module privé par une préparation guidée depuis le client Action officiel, sans redistribuer ses fichiers dans le paquet.
+- Téléchargements HTTPS de versions connues Action/7-Zip, taille et SHA-256 vérifiés avant extraction ; hôtes de redirection limités et transfert annulable.
+- Lecture du MSI 7-Zip en mode base de données, extraction CAB puis NSIS/7z : aucun installateur exécuté et aucune installation système.
+- Configuration lue comme données, sans évaluer le JavaScript ; identifiant d’installation unique, aucune session copiée.
+- Exécution du pont natif restreint avec le runtime officiel préparé localement. L’ancien transport autonome reste disponible pour les profils qui le possèdent déjà.
+- Suppression des recherches implicites dans les outils privés de développement ; ajout du pont au paquet public.
+- QR serveur obtenu avec un profil vide, sans session et sans module privé ; lecture authentifiée du compte vérifiée séparément avec le runtime nouvellement préparé.
+- 130 tests automatiques et contrôles de confidentialité étendus aux configurations natives.
+
 ## 18 octobre 2026 — éclairages du compte, v0.2.0
 
 - Remplacement de l’association fixe A65/A60 par tous les éclairages compatibles du compte, avec plusieurs exemplaires d’un même modèle.
