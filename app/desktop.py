@@ -1,4 +1,4 @@
-"""Windows desktop and notification-area client. Also usable on macOS."""
+"""Shared desktop client with Windows tray and macOS menu bar controls."""
 import argparse
 import json
 import os
@@ -298,7 +298,12 @@ def main():
     parser.add_argument("--lsc-login", action="store_true")
     parser.add_argument("--diagnostic", help="Écrire un diagnostic de connexion sans données secrètes")
     parser.add_argument("--check-login", help="Vérifier la création d’un QR sans utiliser de session enregistrée")
+    parser.add_argument("--prepare-login", help="Préparer et vérifier un QR sans session enregistrée (diagnostic)")
     args = parser.parse_args()
+    if args.prepare_login:
+        from connection_setup import prepare
+        prepare(Store().path.parent)
+        args.check_login = args.prepare_login
     if args.check_login:
         from lsc_account import LSCAccount
         store = Store()
@@ -339,9 +344,19 @@ def main():
         return 0 if report["ok"] else 1
     app = QApplication(sys.argv[:1])
     app.setApplicationName("LSC Control")
+    app.setOrganizationName("LSC Control")
+    if sys.platform == "darwin":
+        app.setQuitOnLastWindowClosed(False)
     from theme import apply_theme
     apply_theme(app)
     window = Window(Controller(demo=args.demo))
+    if sys.platform == "darwin" and not args.screenshot:
+        from macos_runtime import MacIntegration
+        window.mac_integration = MacIntegration(window)
+        if not window.mac_integration.claim_instance():
+            window.quit()
+            return 0
+        app.aboutToQuit.connect(window.mac_integration.close)
     window.show()
     if args.lsc_login:
         QTimer.singleShot(100, window.lsc_login)

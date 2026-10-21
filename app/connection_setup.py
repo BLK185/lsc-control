@@ -13,6 +13,7 @@ import re
 import shutil
 import struct
 import subprocess
+import sys
 import tempfile
 import uuid
 from urllib.parse import urlparse
@@ -195,6 +196,9 @@ def identity_from_source(source):
 
 
 def prepare(home, progress=lambda text:None, cancel=None, installer=None):
+    if sys.platform == 'darwin':
+        from connection_setup_macos import prepare_macos
+        return prepare_macos(home, progress, cancel, installer)
     if os.name != 'nt': raise ControlError('La préparation automatique est disponible sous Windows.')
     base=(Path(home)/'connection').resolve()
     base.mkdir(parents=True,exist_ok=True)

@@ -69,6 +69,7 @@ class SetupTests(unittest.TestCase):
         self.assertEqual((self.root/'out/node_modules/x.js').read_bytes(),b'hello')
         self.assertFalse((self.root/'out/account.json').exists())
 
+    @unittest.skipUnless(os.name == 'nt', 'Windows installer extraction')
     def test_tampered_official_file_is_rejected_before_any_execution(self):
         source=self.root/'client.exe';source.write_bytes(b'wrong')
         with patch('connection_setup.subprocess.run') as run,patch('connection_setup.download') as transfer:
@@ -76,6 +77,7 @@ class SetupTests(unittest.TestCase):
         run.assert_not_called();transfer.assert_not_called()
         self.assertEqual(list((self.root/'profile/connection').iterdir()),[])
 
+    @unittest.skipUnless(os.name == 'nt', 'Windows installer extraction')
     def test_cancel_before_transfer_does_not_execute_or_leave_staging(self):
         cancel=threading.Event();cancel.set()
         with patch('connection_setup.subprocess.run') as run,patch('connection_setup.download') as transfer:

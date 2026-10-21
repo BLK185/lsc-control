@@ -1,0 +1,49 @@
+name: macOS Apple Silicon
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test-and-build:
+    runs-on: macos-15
+    env:
+      QT_QPA_PLATFORM: offscreen
+      LSC_CONTROL_HOME: ${{ github.workspace }}/test-profile
+      MACOSX_DEPLOYMENT_TARGET: '13.0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: arm64
+          cache: pip
+          cache-dependency-path: app/requirements-macos.lock.txt
+      - run: python -m pip install -r app/requirements-macos.lock.txt
+      - run: python -m unittest discover -s app -p 'test_*.py'
+      - run: python tools/check_publication.py --tracked
+      - run: python tools/build_macos.py
+      - name: Launch packaged application with demo data
+        run: |
+          'release/macos/LSC Control.app/Contents/MacOS/LSC Control' --demo --screenshot "$RUNNER_TEMP/macos-demo.png"
+          test -s "$RUNNER_TEMP/macos-demo.png"
+          test "$(lipo -archs 'release/macos/LSC Control.app/Contents/MacOS/LSC Control')" = 'arm64'
+        timeout-minutes: 2
+      - name: Verify first-run QR without any saved session
+        env:
+          LSC_CONTROL_HOME: ${{ runner.temp }}/lsc-clean-profile
+        run: |
+          'release/macos/LSC Control.app/Contents/MacOS/LSC Control' --prepare-login "$RUNNER_TEMP/connection-check.json"
+          python -c 'import json,os; r=json.load(open(os.environ["RUNNER_TEMP"]+"/connection-check.json")); assert r["ok"] and not r["saved_session_used"] and not r["native_runtime_used"]'
+        timeout-minutes: 6
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LSC-Control-macos-arm64
+          path: |
+            release/macos/*.dmg
+            release/macos/*.zip
+            release/macos/SHA256SUMS-macos.txt
+            ${{ runner.temp }}/macos-demo.png
+            ${{ runner.temp }}/connection-check.json
+          if-no-files-found: error

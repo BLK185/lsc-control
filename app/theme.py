@@ -55,8 +55,9 @@ def apply_theme(app):
         for filename in ("segoeui.ttf", "seguisym.ttf"):
             if (fonts / filename).exists():
                 QFontDatabase.addApplicationFont(str(fonts / filename))
-    font = QFont("Segoe UI", 10)
-    font.setFamilies(["Segoe UI", "Segoe UI Symbol"])
+    families = [".AppleSystemUIFont", "Helvetica Neue"] if sys.platform == "darwin" else ["Segoe UI", "Segoe UI Symbol"]
+    font = QFont(families[0], 10)
+    font.setFamilies(families)
     app.setFont(font)
     palette = QPalette()
     for role, colour in ((QPalette.Window,"#101014"), (QPalette.WindowText,"#F4F4F6"),

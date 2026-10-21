@@ -1,5 +1,6 @@
 """Real QR authorization dialog. The server token is kept only in memory."""
 import time
+import sys
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from PySide6.QtCore import QObject, Signal, QTimer, Qt
@@ -104,7 +105,7 @@ class LSCLogin(QDialog):
         if not ready:
             self.image.setText("Connecte ton compte LSC")
             self.status.setText("Prépare la connexion, puis scanne le QR code avec LSC Smart Connect.\n"
-                                "Environ 64 Mo sont téléchargés depuis Action et 7-Zip, vérifiés et préparés sur ce PC. Aucun installateur n’est lancé.")
+                                "Environ 64 Mo sont téléchargés depuis Action et 7-Zip, vérifiés et préparés sur cet ordinateur. Aucun installateur n’est lancé.")
             self.region.setEnabled(True)
             return
         self.token = None
@@ -176,7 +177,8 @@ class LSCLogin(QDialog):
             self.token = None
             self.image.clear()
             self.image.setText("Compte LSC connecté ✓")
-            self.status.setText("Session enregistrée dans le coffre Windows. Lecture des appareils…")
+            vault = "le Trousseau macOS" if sys.platform == "darwin" else "le coffre du système"
+            self.status.setText(f"Session enregistrée dans {vault}. Lecture des appareils…")
             self.submit("devices", self.account.prepare_bulbs)
         elif kind == "devices":
             self.account.remember_devices(value)
