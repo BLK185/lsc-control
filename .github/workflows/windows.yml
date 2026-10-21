@@ -22,6 +22,18 @@ jobs:
       - run: python -m unittest discover -s app -p "test_*.py"
       - run: python tools/check_publication.py --tracked
       - run: python tools/build_windows.py
+      - name: Verify packaged application starts
+        shell: pwsh
+        run: |
+          $capturePath = Join-Path $env:RUNNER_TEMP 'lsc-packaged-demo.png'
+          $appProcess = Start-Process -FilePath '.\release\portable\LSC-Control\LSC-Control.exe' -WindowStyle Hidden -ArgumentList @('--demo', '--screenshot', ('"' + $capturePath + '"')) -PassThru
+          if (-not $appProcess.WaitForExit(30000)) {
+            $appProcess.Kill()
+            throw 'Packaged application did not exit after capture'
+          }
+          if ($appProcess.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath)) {
+            throw 'Packaged application did not start and capture successfully'
+          }
       - uses: actions/upload-artifact@v4
         with:
           name: LSC-Control-windows-x64
