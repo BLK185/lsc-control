@@ -15,7 +15,7 @@ import sys
 from build_windows import licenses
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.4.0"
+VERSION = "0.5.0"
 
 
 def run(*args):
@@ -43,11 +43,14 @@ def main():
                 raise RuntimeError("Application icon could not be written")
     icon = build / "LSC.icns"
     run("iconutil", "--convert", "icns", "--output", icon, iconset)
+    from build_controls_macos import build_native
+    extension, helper = build_native(build)
     run(sys.executable, "-m", "PyInstaller", "--noconfirm", "--log-level", "WARN",
         "--windowed", "--onedir", "--name", "LSC Control", "--target-architecture", "arm64",
         "--osx-bundle-identifier", "fr.carfr.LSCControl", "--icon", icon,
         "--distpath", output, "--workpath", build / "pyinstaller", "--specpath", build,
         "--add-data", str(ROOT / "app/assets") + ":assets",
+        "--add-binary", str(helper) + ":native",
         "--collect-all", "tinytuya", "--collect-all", "keyring", ROOT / "app/entry.py")
     bundle = output / "LSC Control.app"
     resources = bundle / "Contents/Resources"
@@ -55,13 +58,18 @@ def main():
     shutil.copy2(ROOT / "docs/INSTALLATION_MACOS.md", resources / "INSTALLATION_MACOS.md")
     info = bundle / "Contents/Info.plist"
     metadata = plistlib.loads(info.read_bytes())
-    metadata.update(CFBundleShortVersionString=VERSION, CFBundleVersion="4",
+    metadata.update(CFBundleShortVersionString=VERSION, CFBundleVersion="5",
                     LSMinimumSystemVersion="13.0", NSHighResolutionCapable=True,
                     NSLocalNetworkUsageDescription="Retrouver vos éclairages LSC sur le réseau local pour un contrôle plus rapide.",
                     NSHumanReadableCopyright="LSC Control contributors — MIT")
     info.write_bytes(plistlib.dumps(metadata))
+    plugins = bundle / "Contents/PlugIns"
+    plugins.mkdir(exist_ok=True)
+    widget = plugins / extension.name
+    shutil.copytree(extension, widget, symlinks=True)
+    run("codesign", "--force", "--sign", "-", "--entitlements", ROOT / "macos/Controls.entitlements", widget)
     run(sys.executable, ROOT / "tools/check_publication.py", "--bundle", bundle)
-    run("codesign", "--force", "--deep", "--sign", "-", bundle)
+    run("codesign", "--force", "--sign", "-", bundle)
     run("codesign", "--verify", "--deep", "--strict", "--verbose=2", bundle)
     staging = build / "dmg"
     staging.mkdir(exist_ok=True)

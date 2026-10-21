@@ -7,7 +7,7 @@ permissions:
   contents: read
 jobs:
   test-and-build:
-    runs-on: macos-15
+    runs-on: macos-26
     env:
       QT_QPA_PLATFORM: offscreen
       LSC_CONTROL_HOME: ${{ github.workspace }}/test-profile
@@ -23,7 +23,11 @@ jobs:
       - run: python -m pip install -r app/requirements-macos.lock.txt
       - run: python -m unittest discover -s app -p 'test_*.py'
       - run: python tools/check_publication.py --tracked
+      - run: command -v xcodegen || brew install xcodegen
       - run: python tools/build_macos.py
+      - name: Verify Swift controls client and extension registration
+        run: python tools/check_controls_macos.py
+        timeout-minutes: 3
       - name: Launch packaged application with demo data
         run: |
           'release/macos/LSC Control.app/Contents/MacOS/LSC Control' --demo --screenshot "$RUNNER_TEMP/macos-demo.png"

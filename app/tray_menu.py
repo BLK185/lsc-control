@@ -97,5 +97,7 @@ class TrayMenu(QMenu):
         self.addAction("Tout éteindre", lambda: self.window.group(False))
         self.addAction("Synchroniser", lambda: self.window.refresh(force=True))
         self.addAction("Connexion LSC…", self.window.lsc_login)
+        if hasattr(self.window, "mac_integration"):
+            self.addAction("Centre de contrôle…", self.window.mac_integration.configure_controls)
         self.addSeparator()
         self.addAction("Quitter", self.window.quit)

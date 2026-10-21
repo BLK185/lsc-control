@@ -1,10 +1,11 @@
 # Installer LSC Control sur Mac Apple Silicon
 
-Version 0.4.0 — Mac M1, M2, M3, M4 et suivants, macOS 13 ou ultérieur.
+Préversion 0.5.0 — Mac M1, M2, M3, M4 et suivants, macOS 13 ou ultérieur.
+Les commandes natives expérimentales nécessitent macOS 26 ou ultérieur.
 Cette version ARM64 contient Python et ses dépendances. Rosetta, Homebrew et
 un compte développeur Tuya ne sont pas nécessaires.
 
-1. Télécharger `LSC-Control-0.4.0-macos-arm64.dmg` depuis les releases GitHub.
+1. Télécharger le DMG ARM64 correspondant à la version souhaitée depuis les releases GitHub.
 2. Ouvrir le DMG puis glisser **LSC Control** dans **Applications**.
 3. Lancer l’application depuis Applications.
 
@@ -46,13 +47,34 @@ Le contrôle à distance utilise le service LSC. **Connexion locale rapide** peu
 retrouver les éclairages du même réseau ; macOS peut demander l’accès au réseau
 local. Aucun appairage natif Mac n’est fourni : ajouter les appareils dans LSC mobile.
 
-## Centre de contrôle natif
+## Centre de contrôle natif — expérimental, macOS 26+
 
-Cette distribution fournit la **barre des menus**. Elle ne fournit pas encore
-une extension fonctionnelle du Centre de contrôle. Une telle extension doit
-être signée et partager ses commandes avec l’app au moyen d’un groupe
-d’applications autorisé par Apple. Aucun certificat de distribution n’est
-actuellement configuré pour ce projet.
+L’extension WidgetKit fournit une commande **Éclairage LSC**, configurable pour
+un appareil du compte ou pour **Tous les éclairages**. Elle commande le
+marche/arrêt ; les autres réglages restent dans l’app et la barre des menus.
+
+1. Remplacer l’ancienne app dans Applications, puis lancer la nouvelle au moins une fois.
+2. Dans le menu de LSC Control ou son icône d’ampoule, ouvrir **Centre de contrôle…**.
+3. Cliquer **Copier le code de connexion**.
+4. Ouvrir le Centre de contrôle du Mac → **Modifier les commandes** → chercher **LSC Control** → ajouter **Éclairage LSC**.
+5. Modifier cette commande : coller le code dans **Code de connexion (première utilisation)**, puis choisir l’éclairage. Ce champ peut se trouver dans les paramètres supplémentaires.
+
+Les commandes suivantes peuvent réutiliser cette association. Ajouter plusieurs
+fois **Éclairage LSC** pour commander plusieurs lampes séparément. Garder l’app
+active dans la barre des menus. Si le code est réinitialisé dans l’app,
+recopier le nouveau code dans les commandes déjà configurées.
+
+Cette voie utilise un accès HTTP limité à cet ordinateur, protégé par un code
+aléatoire distinct de la session LSC. Elle ne demande aucun groupe d’applications
+Apple ni partage du Trousseau entre processus. L’extension reste signée localement,
+sans Developer ID ni notarisation. Son affichage et son exécution dans le vrai
+Centre de contrôle doivent être confirmés sur le Mac du propriétaire ; un simple
+enregistrement par macOS ne constitue pas cette validation.
+
+Si **LSC Control** n’apparaît pas dans la galerie après installation et lancement,
+signaler ce résultat avec le numéro exact de macOS. Ne pas modifier les protections
+de macOS pour forcer l’extension. La version 0.4.0 reste disponible et son app ainsi
+que sa barre des menus ont été validées par le propriétaire sur Mac M4.
 
 ## Données et limites
 

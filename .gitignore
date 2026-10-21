@@ -8,6 +8,7 @@ app/build/
 *.spec
 macos/generated/
 macos/*.xcodeproj/
+macos/Controls-Info.plist
 tools/*.jar
 analysis/
 app/dist-mobile-ui/
@@ -22,7 +23,8 @@ release/
 test-profile/
 tools/github-cli/
 tools/inno-setup/
-macos/
+macos/build/
+macos/DerivedData/
 DEMANDE-ACCES-LSC.txt
 /Lancer-LSC.cmd
 **/private/

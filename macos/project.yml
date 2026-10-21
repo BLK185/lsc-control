@@ -1,0 +1,36 @@
+name: LSCControls
+options:
+  deploymentTarget:
+    macOS: '26.0'
+settings:
+  base:
+    SWIFT_VERSION: '5.0'
+    CODE_SIGNING_ALLOWED: NO
+    GENERATE_INFOPLIST_FILE: NO
+targets:
+  LSCControls:
+    type: app-extension
+    platform: macOS
+    sources: [Controls, Shared]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: fr.carfr.LSCControl.Controls
+        SKIP_INSTALL: YES
+        APPLICATION_EXTENSION_API_ONLY: YES
+        ENABLE_APP_INTENTS_METADATA_GENERATION: YES
+        INFOPLIST_FILE: Controls-Info.plist
+    info:
+      path: Controls-Info.plist
+      properties:
+        CFBundleDisplayName: LSC Control
+        CFBundleShortVersionString: '0.5.0'
+        CFBundleVersion: '5'
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+schemes:
+  LSCControls:
+    build:
+      targets:
+        LSCControls: all

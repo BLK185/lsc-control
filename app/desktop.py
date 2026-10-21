@@ -169,6 +169,8 @@ class Window(QMainWindow):
         from datetime import datetime
         text = "Simulation · aucune ampoule réelle commandée." if self.controller.demo else "État lu à " + datetime.now().strftime("%H:%M:%S")
         self.message.setText(" · ".join(errors) if errors else text)
+        if hasattr(self, "mac_integration"):
+            self.mac_integration.updated()
 
     def poll_state(self):
         if self.busy or QApplication.activeModalWidget() is not None:
