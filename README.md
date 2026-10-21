@@ -1,8 +1,9 @@
 # LSC Control
 
-**Vos lumières LSC, dans une fenêtre et près de l’horloge Windows.**
+**Vos lumières LSC, sur Windows et dans la barre des menus de votre Mac.**
 
 [![Windows](https://github.com/BLK185/lsc-control/actions/workflows/windows.yml/badge.svg)](https://github.com/BLK185/lsc-control/actions/workflows/windows.yml)
+[![macOS Apple Silicon](https://github.com/BLK185/lsc-control/actions/workflows/macos.yml/badge.svg)](https://github.com/BLK185/lsc-control/actions/workflows/macos.yml)
 [![Version](https://img.shields.io/badge/version-0.3.1-8A00FC)](https://github.com/BLK185/lsc-control/releases)
 [![Licence MIT](https://img.shields.io/badge/licence-MIT-51007A)](LICENSE)
 
@@ -22,6 +23,20 @@ Cette interopérabilité utilise localement le composant officiel Battletron 2.0
 
 → [Installation et configuration Windows](docs/INSTALLATION_WINDOWS.md)
 
+## Version macOS Apple Silicon — 0.4.0
+
+Le [DMG pour Mac M1 à M4 et suivants](https://github.com/BLK185/lsc-control/releases/tag/v0.4.0) contient une application autonome : glisser **LSC Control** dans **Applications**, puis préparer la connexion et scanner le QR avec LSC Smart Connect. Aucun transfert de session Windows, installation de Python ou usage de Rosetta n’est nécessaire. macOS 13 ou ultérieur est requis.
+
+La fenêtre reprend couleurs, blancs, scènes disponibles, compte à rebours et planning partagé. L’icône de barre des menus propose les commandes individuelles et groupées. Fermer la fenêtre laisse ces commandes disponibles ; `⌘Q` quitte l’app. Les appareils ajoutés sur le téléphone sont synchronisés depuis le compte.
+
+La préparation Mac extrait les ressources du client officiel et les lit en Python ; elle **n’exécute ni Electron Windows ni la DLL fabricant**. Un QR anonyme a été obtenu avec cette préparation sans restaurer de session. L’autorisation sur le téléphone et les commandes physiques restent à vérifier sur le Mac du propriétaire.
+
+**Préversion sans notarisation Apple** : la première ouverture peut demander **Réglages Système → Confidentialité et sécurité → Ouvrir quand même**. L’extension native du Centre de contrôle n’est pas livrée : elle reste à signer et valider avec un groupe d’applications autorisé par Apple. L’icône de barre des menus est disponible.
+
+→ [Installation et configuration macOS](docs/INSTALLATION_MACOS.md)
+
+![Application macOS — données de démonstration](docs/images/macos.png)
+
 ## Ce que l’application permet
 
 | Fonction | État |
@@ -38,7 +53,7 @@ Cette interopérabilité utilise localement le composant officiel Battletron 2.0
 | Contrôle LAN rapide et repli cloud | Implémenté ; cloud selon configuration et disponibilité du service |
 | Scènes et conservation des dernières variantes reçues | Implémenté ; validation physique complète encore à faire |
 | Notifications Windows des changements marche/arrêt observés | Disponible ; ce ne sont pas les événements push LSC |
-| macOS et Centre de contrôle | Envisagé après Windows ; non livré dans cette version |
+| macOS Apple Silicon | Application et barre des menus dans la préversion 0.4.0 ; Centre de contrôle natif en attente de signature et validation |
 
 Les changements du téléphone sont repris lors des lectures d’état. Le planning reste celui du compte LSC : aucun ordonnanceur parallèle n’est créé sur le PC. Le compte à rebours et les horaires continuent sans laisser l’ordinateur allumé.
 
@@ -66,7 +81,7 @@ Le journal reconstitue le travail à partir des notes et essais. Les commits de 
 
 ## Développer et tester
 
-Python 3.12 et Windows x64 sont l’environnement de référence.
+Python 3.12, Windows x64 et macOS Apple Silicon sont les environnements de construction.
 
 ```powershell
 python -m venv .venv
@@ -75,7 +90,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m unittest discover -s app -p "test_*.py"
 ```
 
-**141 tests automatiques** couvrent transports, conversions, planning, stockage des sessions, import privé, interaction des panneaux, saisie au clic, catalogue dynamique, ciblage de la file groupée, intégrité des téléchargements, annulation et préparation de connexion. Ils n’utilisent aucun compte réel. Les validations physiques du propriétaire sont indiquées séparément.
+**151 tests automatiques** couvrent transports, conversions, planning, stockage des sessions, import privé, interaction des panneaux, saisie au clic, catalogue dynamique, ciblage de la file groupée, intégrité des téléchargements, annulation et préparation de connexion. Ils n’utilisent aucun compte réel. Les validations physiques du propriétaire sont indiquées séparément.
 
 Pour compiler l’installateur public, installer [Inno Setup 6](https://jrsoftware.org/isdl.php), puis :
 

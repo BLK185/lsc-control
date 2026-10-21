@@ -1,6 +1,6 @@
 # Logiciels tiers
 
-La licence MIT de ce dépôt couvre le code original de LSC Control. Les dépendances conservent leurs propres licences. Les distributions Windows comportent un dossier `licenses/` avec les textes disponibles dans les distributions Python utilisées.
+La licence MIT de ce dépôt couvre le code original de LSC Control. Les dépendances conservent leurs propres licences. Les distributions Windows et macOS comportent un dossier `licenses/` avec les textes disponibles dans les distributions Python utilisées (sur Mac : `LSC Control.app/Contents/Resources/licenses`).
 
 | Composant | Usage | Projet |
 | --- | --- | --- |
@@ -11,7 +11,7 @@ La licence MIT de ce dépôt couvre le code original de LSC Control. Les dépend
 | cryptography | Primitives cryptographiques | https://cryptography.io/ |
 | keyring | Coffre système | https://github.com/jaraco/keyring |
 | qrcode | Affichage du QR code | https://github.com/lincolnloop/python-qrcode |
-| PyInstaller | Assemblage Windows | https://pyinstaller.org/ |
+| PyInstaller | Assemblage Windows et macOS | https://pyinstaller.org/ |
 | Inno Setup | Installateur | https://jrsoftware.org/ |
 
 PySide6 et les bibliothèques Qt sont distribués sans modification, sous leurs licences applicables, notamment LGPLv3/GPLv3. Leurs DLL restent séparées de l’exécutable et peuvent être remplacées par des versions compatibles. Les sources et informations de compilation sont disponibles sur https://code.qt.io/ et https://www.qt.io/qt-for-python. Les notices fournies font autorité pour chaque fichier.

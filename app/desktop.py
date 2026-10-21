@@ -15,10 +15,11 @@ from PySide6.QtWidgets import (
 )
 from core import Controller, ControlError, Store
 
-def bulb_icon():
-    pixmap = QPixmap(64, 64)
+def bulb_icon(size=64):
+    pixmap = QPixmap(size, size)
     pixmap.fill(Qt.GlobalColor.transparent)
     painter = QPainter(pixmap)
+    painter.scale(size / 64, size / 64)
     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
     painter.setBrush(QColor("#f6d365"))
     painter.setPen(Qt.PenStyle.NoPen)
@@ -299,6 +300,7 @@ def main():
     parser.add_argument("--diagnostic", help="Écrire un diagnostic de connexion sans données secrètes")
     parser.add_argument("--check-login", help="Vérifier la création d’un QR sans utiliser de session enregistrée")
     parser.add_argument("--prepare-login", help="Préparer et vérifier un QR sans session enregistrée (diagnostic)")
+    parser.add_argument("--macos-smoke", help="Vérifier barre des menus et Trousseau dans un profil de test")
     args = parser.parse_args()
     if args.prepare_login:
         from connection_setup import prepare
@@ -358,6 +360,9 @@ def main():
             return 0
         app.aboutToQuit.connect(window.mac_integration.close)
     window.show()
+    if args.macos_smoke:
+        from macos_runtime import smoke_check
+        QTimer.singleShot(800, lambda: smoke_check(window, args.macos_smoke))
     if args.lsc_login:
         QTimer.singleShot(100, window.lsc_login)
     if args.screenshot:

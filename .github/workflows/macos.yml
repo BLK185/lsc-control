@@ -37,6 +37,13 @@ jobs:
           'release/macos/LSC Control.app/Contents/MacOS/LSC Control' --prepare-login "$RUNNER_TEMP/connection-check.json"
           python -c 'import json,os; r=json.load(open(os.environ["RUNNER_TEMP"]+"/connection-check.json")); assert r["ok"] and not r["saved_session_used"] and not r["native_runtime_used"]'
         timeout-minutes: 6
+      - name: Verify native menu bar, lifecycle and Keychain
+        env:
+          QT_QPA_PLATFORM: cocoa
+        run: |
+          'release/macos/LSC Control.app/Contents/MacOS/LSC Control' --demo --macos-smoke "$RUNNER_TEMP/macos-native-check.json"
+          python -c 'import json,os; r=json.load(open(os.environ["RUNNER_TEMP"]+"/macos-native-check.json")); print(r); assert r["ok"] and r["light_count"] == 2'
+        timeout-minutes: 2
       - uses: actions/upload-artifact@v4
         with:
           name: LSC-Control-macos-arm64
@@ -46,4 +53,5 @@ jobs:
             release/macos/SHA256SUMS-macos.txt
             ${{ runner.temp }}/macos-demo.png
             ${{ runner.temp }}/connection-check.json
+            ${{ runner.temp }}/macos-native-check.json
           if-no-files-found: error

@@ -1,5 +1,8 @@
 """macOS lifecycle and a user-only, activation-only single-instance channel."""
 import hashlib
+import json
+from pathlib import Path
+import secrets
 from PySide6.QtCore import QIODevice, QObject
 from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
@@ -49,3 +52,35 @@ class MacIntegration(QObject):
 
     def close(self):
         self.server.close()
+
+
+def smoke_check(window, report_path):
+    """CI-only checks with demo bulbs and a disposable synthetic Keychain item."""
+    from PySide6.QtWidgets import QApplication, QSystemTrayIcon
+    import keyring
+    report = {"demo": window.controller.demo, "platform": QApplication.platformName()}
+    name = "macos-ci-" + secrets.token_hex(12)
+    stored = False
+    try:
+        if not window.controller.demo or report["platform"] != "cocoa":
+            raise RuntimeError()
+        report["menu_bar_available"] = QSystemTrayIcon.isSystemTrayAvailable() and window.tray.isVisible()
+        window.tray.contextMenu().rebuild()
+        report["light_count"] = len(window.cards)
+        window.close()
+        report["close_keeps_menu"] = not window.isVisible() and window.tray.isVisible()
+        window.open_window()
+        report["reopen_works"] = window.isVisible()
+        secret = secrets.token_urlsafe(32)
+        keyring.set_password("LSC Control CI", name, secret)
+        stored = True
+        report["keychain_roundtrip"] = keyring.get_password("LSC Control CI", name) == secret
+        report["ok"] = all(report.get(key) is True for key in (
+            "menu_bar_available", "close_keeps_menu", "reopen_works", "keychain_roundtrip"))
+    except Exception:
+        report["ok"] = False
+    finally:
+        if stored:
+            keyring.delete_password("LSC Control CI", name)
+        Path(report_path).write_text(json.dumps(report), encoding="utf-8")
+        window.quit()

@@ -1,8 +1,8 @@
-# Démarche : de deux ampoules à une application Windows
+# Démarche : de deux ampoules à une application Windows et Mac
 
 ## Le besoin
 
-Commander une LSC A65 CCT et une A60 RGB-CCT depuis une vraie fenêtre de bureau et l’icône près de l’horloge. Le téléphone devait rester utilisable, avec le même compte et les mêmes programmations. L’accès depuis un autre réseau faisait partie de l’objectif. Une intégration Mac est envisagée, mais Windows a été priorisé.
+Commander une LSC A65 CCT et une A60 RGB-CCT depuis une vraie fenêtre de bureau et l’icône près de l’horloge. Le téléphone devait rester utilisable, avec le même compte et les mêmes programmations. L’accès depuis un autre réseau faisait partie de l’objectif. Windows a été priorisé ; une première préversion macOS est maintenant préparée.
 
 ## Codex et REA
 
@@ -28,7 +28,7 @@ Le transport Python a été comparé à la primitive native observée sur 20 cas
 
 Les retours du propriétaire confirment marche/arrêt, blancs, couleurs et compte à rebours sur la RGB, ainsi que le fonctionnement du planning. Les tests automatiques n’allument aucune ampoule réelle. Les scènes disposent d’un codec et d’une interface, mais toutes leurs variations physiques ne sont pas encore confirmées. Les scènes non reçues utilisent des propositions locales, sans prétendre reconstruire tout le catalogue personnalisé du téléphone.
 
-Les notifications Windows observent les changements marche/arrêt entre deux lectures. Elles ne constituent pas un abonnement aux événements push LSC et n’attribuent pas une variation à une programmation précise. La compatibilité physique des autres modèles et le déploiement Mac restent ouverts. La préparation initiale dépend de la disponibilité du téléchargement officiel épinglé et du service LSC.
+Les notifications Windows observent les changements marche/arrêt entre deux lectures. Elles ne constituent pas un abonnement aux événements push LSC et n’attribuent pas une variation à une programmation précise. La compatibilité physique des autres modèles et les essais sur le Mac du propriétaire restent ouverts. La préparation initiale dépend de la disponibilité du téléchargement officiel épinglé et du service LSC.
 
 ## Connexion distribuable — 21 octobre
 
@@ -44,7 +44,21 @@ Ce mécanisme reste une intégration non officielle, liée au protocole et au co
 
 La version 0.2.0 sépare l’inventaire des appareils déjà associés de leur appairage initial. Les ajouts réalisés sur téléphone remontent automatiquement dans Windows. REA et la documentation primaire ont servi à examiner l’appairage, sans réinitialiser de lampe ni créer de jeton réel. La piste AP Wi-Fi nécessite un jeton de foyer, le transport UDP chiffré et la gestion Wi-Fi Windows ; les modes EZ, BLE, Zigbee et Matter ne sont pas interchangeables. Aucun appairage natif non validé n’est présenté comme fonction disponible.
 
-## Références techniques
+## Portage macOS — 21 octobre
+
+La fenêtre et la barre des menus partagent le moteur Python de Windows : catalogue dynamique, commandes, planning et compte à rebours. Le paquet ARM64 contient son interpréteur et ses bibliothèques ; le propriétaire autorise son propre compte par QR et ses secrets restent dans le Trousseau macOS.
+
+La dépendance native Windows ne peut pas s’exécuter sur un Mac M4. REA a confirmé l’identité exacte de la DLL examinée ; les fournisseurs de décompilation native disponibles étaient absents ou incompatibles avec le poste. Une analyse locale ciblée des instructions et des ressources a permis de reconstruire le lecteur des parts polynomiales du BMP. Des données synthétiques indépendantes ont ensuite donné la même clé dérivée et la même signature avec la vraie primitive native. Aucune constante d’identité fabricant n’est copiée dans le code public : le lecteur accepte seulement les ressources de la version officielle épinglée.
+
+Le transport Python a obtenu un QR réel sans session à partir de cette nouvelle préparation. La CI macOS construit le DMG, démarre l’exécutable en démonstration et demande un QR depuis un profil vierge, sans publier ce profil. Cela ne remplace pas la validation physique sur le Mac du propriétaire. Le Centre de contrôle natif reste séparé de la barre des menus et n’est pas annoncé comme livré : signature Apple et partage autorisé des commandes restent à mettre en place.
+
+## Références du portage
+
+- [Apple : contrôles WidgetKit](https://developer.apple.com/documentation/widgetkit/controls-collection).
+- [Apple : accès aux groupes d’applications macOS et signature](https://developer.apple.com/documentation/xcode/accessing-app-group-containers).
+- [GitHub : machines macOS Apple Silicon pour la compilation](https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job).
+
+## Autres références techniques
 
 - [Action : client Battletron officiel](https://www.action.com/fr-fr/brand/battletron-lsc-smart-gaming/).
 - [7-Zip 26.04 officiel](https://github.com/ip7z/7zip/releases/tag/26.04) et [licences](https://www.7-zip.org/license.txt).

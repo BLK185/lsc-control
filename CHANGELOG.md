@@ -1,5 +1,15 @@
 # Journal de développement
 
+## 0.4.0 — macOS Apple Silicon — 21 octobre 2026
+
+- Application autonome ARM64 et DMG pour Mac M1 et suivants, sans Rosetta.
+- Fenêtre et commandes de barre des menus partageant les fonctions Windows.
+- Préparation de connexion QR sur Mac : extraction locale vérifiée, lecteur portable des ressources de signature, aucun code Windows exécuté.
+- Session dans le Trousseau macOS ; aucun profil du propriétaire distribué.
+- Construction et essais du paquet sur macOS en CI, dont QR sans session.
+- Préversion sans notarisation ; Centre de contrôle natif encore non livré.
+
+
 Ce journal reconstitue les étapes à partir des notes du projet et des essais du propriétaire. Il ne prétend pas que les commits GitHub ont été créés ces jours-là : la mise en dépôt a lieu le 18 octobre 2026. Aucune activité n’est inventée pour les jours sans trace.
 
 ## 21 octobre 2026 — curseurs directs, v0.3.1

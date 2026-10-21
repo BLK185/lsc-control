@@ -39,7 +39,7 @@ def main():
     for size in (16, 32, 128, 256, 512):
         for scale in (1, 2):
             name = f"icon_{size}x{size}" + ("@2x" if scale == 2 else "") + ".png"
-            if not bulb_icon().pixmap(size * scale, size * scale).save(str(iconset / name)):
+            if not bulb_icon(size * scale).pixmap(size * scale, size * scale).save(str(iconset / name)):
                 raise RuntimeError("Application icon could not be written")
     icon = build / "LSC.icns"
     run("iconutil", "--convert", "icns", "--output", icon, iconset)
