@@ -33,13 +33,17 @@ La préparation Mac extrait les ressources du client officiel et les lit en Pyth
 
 **Préversion sans notarisation Apple** : la première ouverture peut demander **Réglages Système → Confidentialité et sécurité → Ouvrir quand même**. La version 0.4.0 fournit l’icône de barre des menus ; elle a été validée sur Mac M4 par le propriétaire, y compris les commandes et le planning partagé.
 
-### Centre de contrôle — préversion 0.5.0 expérimentale
+### Centre de contrôle — préversion 0.5.1 expérimentale
 
-Une [préversion séparée](https://github.com/BLK185/lsc-control/releases/tag/v0.5.0-beta.1) ajoute une extension WidgetKit pour macOS 26 et suivants. La commande **Éclairage LSC** permet de choisir n’importe quel éclairage du compte ou tous ensemble, puis d’en régler le marche/arrêt. Les autres réglages restent dans l’app.
+Une [préversion séparée](https://github.com/BLK185/lsc-control/releases/tag/v0.5.1-beta.1) ajoute une extension WidgetKit pour macOS 26 et suivants. La commande **Éclairage LSC** permet de choisir n’importe quel éclairage du compte ou tous ensemble, puis d’en régler le marche/arrêt. Les autres réglages restent dans l’app.
 
 La première association utilise **LSC Control → Centre de contrôle… → Copier le code de connexion**, puis ce code dans la configuration de la commande native. Ce code local donne uniquement accès aux lumières et à leur marche/arrêt. Aucun groupe d’applications Apple ni partage de la session LSC n’est nécessaire. L’app doit rester active dans la barre des menus.
 
 Cette extension utilise une signature locale sans notarisation. Sa compilation, son client Swift et son enregistrement sont vérifiés en CI ; sa présence et son exécution dans le vrai Centre de contrôle restent à confirmer sur le Mac du propriétaire. Cette préversion ne remplace pas cette validation par un simple succès de compilation.
+
+La beta 0.5.0 a montré sur le Mac du propriétaire un contrôle vide en chargement et une configuration difficile. La 0.5.1 ouvre automatiquement la configuration, affiche un état explicite avant sélection et laisse l’éditeur s’ouvrir sans connexion préalable. Chaque nouvelle instance peut sélectionner une autre ampoule. Les tests Swift exercent désormais le fournisseur de valeur et l’intention réels, en plus du client HTTP ; la vérification dans l’interface du Mac reste à renouveler.
+
+Les commandes prennent la priorité sur la suite des actualisations. La recherche LAN est automatique sur Mac et se déroule en arrière-plan ; les connexions cloud sont réutilisées et les lectures préalables redondantes sont réduites. L’état après écriture reste confirmé par une lecture, et le contrôle natif utilise les états vérifiés récents. Le gain réel dépend du réseau et reste à mesurer sur le Mac du propriétaire.
 
 → [Installation et configuration macOS](docs/INSTALLATION_MACOS.md)
 
@@ -61,7 +65,7 @@ Cette extension utilise une signature locale sans notarisation. Sa compilation, 
 | Contrôle LAN rapide et repli cloud | Implémenté ; cloud selon configuration et disponibilité du service |
 | Scènes et conservation des dernières variantes reçues | Implémenté ; validation physique complète encore à faire |
 | Notifications Windows des changements marche/arrêt observés | Disponible ; ce ne sont pas les événements push LSC |
-| macOS Apple Silicon | App et barre des menus 0.4.0 validées sur Mac M4 ; Centre de contrôle 0.5.0 expérimental à valider sur ce Mac |
+| macOS Apple Silicon | App et barre des menus 0.4.0 validées sur Mac M4 ; Centre de contrôle 0.5.1 expérimental à valider sur ce Mac |
 
 Les changements du téléphone sont repris lors des lectures d’état. Le planning reste celui du compte LSC : aucun ordonnanceur parallèle n’est créé sur le PC. Le compte à rebours et les horaires continuent sans laisser l’ordinateur allumé.
 
@@ -98,7 +102,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m unittest discover -s app -p "test_*.py"
 ```
 
-**160 tests automatiques** couvrent transports, conversions, planning, stockage des sessions, import privé, interaction des panneaux, saisie au clic, catalogue dynamique, ciblage de la file groupée, intégrité des téléchargements, annulation et préparation de connexion. Ils n’utilisent aucun compte réel. Les validations physiques du propriétaire sont indiquées séparément.
+**168 tests automatiques** couvrent transports, conversions, planning, stockage des sessions, import privé, interaction des panneaux, saisie au clic, catalogue dynamique, ciblage de la file groupée, intégrité des téléchargements, annulation et préparation de connexion. Ils n’utilisent aucun compte réel. Les validations physiques du propriétaire sont indiquées séparément.
 
 Pour compiler l’installateur public, installer [Inno Setup 6](https://jrsoftware.org/isdl.php), puis :
 

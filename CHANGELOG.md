@@ -1,5 +1,16 @@
 # Journal de développement
 
+## 0.5.1 beta — Réactivité et configuration native — 22 octobre 2026
+
+- Correctif du contrôle natif vide : configuration demandée à l’ajout, aperçu explicite sans ampoule et requête de sélection sans erreur avant association.
+- Sélections distinctes pour plusieurs instances du contrôle ; tests Swift du fournisseur de valeur et de l’intention réels.
+- Priorité aux commandes entre lectures, recherche LAN automatique en arrière-plan, connexions cloud réutilisées.
+- Suppression d’une lecture préalable redondante si la description vérifiée a moins de 15 s ; confirmation après publication conservée.
+- Valeur native lue depuis un état récent vérifié, avec expiration et contrôle de l’identité de l’appareil.
+- Indicateur de connexion native et de code refusé dans le panneau de configuration de l’app.
+- 168 tests Python ; latence effective et configuration dans le Centre de contrôle à retester sur le Mac du propriétaire.
+
+
 ## 0.5.0 beta — Centre de contrôle natif — 21 octobre 2026
 
 - Extension WidgetKit macOS 26+ configurable sur l’inventaire du compte : marche/arrêt d’un éclairage ou de tous ensemble.
