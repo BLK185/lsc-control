@@ -22,6 +22,11 @@ DEFAULTS = [
 class ControlError(Exception):
     pass
 
+
+class InventoryYield(Exception):
+    """Stop between inventory requests to let an interactive command proceed."""
+    pass
+
 def checked(result):
     if not isinstance(result, dict) or "Error" in result:
         raise ControlError("L'ampoule ne répond pas. Vérifie l'adresse IP, la clé locale et le protocole.")
@@ -254,6 +259,13 @@ class Controller:
         self.function_cache = {}
         self.local_retry_after = {}
         self.inventory_checked = self.schema_checked = 0
+        self.state_cache = {}
+        self.detail_cache = {}
+        self.cache_lock = threading.Lock()
+        self.lsc_account = None
+        self.lsc_signature = None
+        self.interrupt_reads = lambda: None
+        self.read_yield = lambda: False
         self.demo_state = {d["slot"]: {"power": False, "brightness": 100, "temperature": 20, "mode": "white", "countdown":0, "hsv": {"h": 0, "s": 100, "v": 100}} for d in DEFAULTS}
 
     def devices(self):
@@ -270,18 +282,51 @@ class Controller:
             now = time.monotonic()
             if not force and self.inventory_checked and now - self.inventory_checked < 30:
                 return
-            self.inventory_checked = now
             from lsc_account import LSCAccount
             account = LSCAccount(self.store, config.get("lsc_region", "eu"))
+            account.cancel = self.read_yield
             try:
                 if not account.connected:
                     return
                 full = force or not self.schema_checked or now - self.schema_checked >= 300
                 account.prepare_bulbs(refresh_schema=full)
+                self.inventory_checked = now
                 if full:
                     self.schema_checked = now
+            except InventoryYield:
+                self.inventory_checked = 0
             finally:
                 account.close()
+
+    def _account(self, config):
+        """Keep HTTPS connections warm, while invalidating on session changes."""
+        from lsc_account import LSCAccount
+        region = config.get("lsc_region", "eu")
+        saved = self.store.secret("lsc_session:" + region)
+        signature = (region, saved)
+        if self.lsc_account is None or self.lsc_signature != signature:
+            if self.lsc_account:
+                self.lsc_account.close()
+            self.lsc_account = LSCAccount(self.store, region, restore=False)
+            self.lsc_account.session = json.loads(saved) if saved else {}
+            self.lsc_signature = signature
+        return self.lsc_account
+
+    def recent_status(self, slot, max_age=15):
+        """Only return a recently verified state for this exact device."""
+        _, item = self._device(slot)
+        with self.cache_lock:
+            entry = self.state_cache.get(slot)
+            if entry and entry[1] == item.get("device_id") and time.monotonic() - entry[0] <= max_age:
+                return json.loads(json.dumps(entry[2]))
+        return None
+
+    def _recent_detail(self, item):
+        with self.cache_lock:
+            entry = self.detail_cache.get(item['slot'])
+            if entry and entry[1] == item['device_id'] and time.monotonic() - entry[0] <= 15:
+                return json.loads(json.dumps(entry[2]))
+        return None
 
     def _device(self, slot):
         config = self.store.load()
@@ -323,6 +368,14 @@ class Controller:
 
     def status(self, slot):
         with self.lock:
+            state = self._read_status(slot)
+            _, item = self._device(slot)
+            with self.cache_lock:
+                self.state_cache[slot] = (time.monotonic(), item.get('device_id'), json.loads(json.dumps(state)))
+            return state
+
+    def _read_status(self, slot):
+        with self.lock:
             config, item = self._device(slot)
             if self.demo:
                 from light_features import scene_options
@@ -336,11 +389,8 @@ class Controller:
                 local = self._lsc_local(item)
                 if local:
                     return self._lsc_state(item, local, "lsc-local")
-                account = LSCAccount(self.store, config.get("lsc_region", "eu"))
-                try:
-                    return self._lsc_state(item, account.detail(item), "lsc")
-                finally:
-                    account.close()
+                account = self._account(config)
+                return self._lsc_state(item, account.detail(item), "lsc")
             if config["mode"] == "cloud":
                 cloud = self._cloud(config)
                 values = cloud.status(item["device_id"])
@@ -369,6 +419,7 @@ class Controller:
                 bulb.close()
 
     def command(self, slot, action, value):
+        self.interrupt_reads()
         with self.lock:
             config, item = self._device(slot)
             validate_command(action, value, item["rgb"])
@@ -400,22 +451,24 @@ class Controller:
                 from lsc_transport import lsc_command
                 from lsc_transport import lsc_state
                 from lsc_account import LSCAccount
-                local = self._lsc_local(item)
+                previous = self._recent_detail(item)
+                if previous and previous.get('isOnline') is False:
+                    previous = None
+                local = previous if previous and previous.get('_transport') == 'lsc-local' else self._lsc_local(item)
                 if local:
                     dps = lsc_command(item["lsc_functions"], local["dps"], action, value)
                     result = self._lsc_local(item, dps)
                     if result:
                         return self._lsc_state(item,result,"lsc-local")
-                account = LSCAccount(self.store, config.get("lsc_region", "eu"))
-                try:
-                    detail = account.detail(item)
-                    if detail.get("isOnline") is False:
-                        raise ControlError("Cette ampoule est hors ligne dans LSC.")
-                    dps = lsc_command(item["lsc_functions"], detail["dps"], action, value)
-                    account.publish(item, dps)
-                finally:
-                    account.close()
-                return self.status(slot)
+                account = self._account(config)
+                detail = previous or account.detail(item)
+                if detail.get("isOnline") is False:
+                    raise ControlError("Cette ampoule est hors ligne dans LSC.")
+                dps = lsc_command(item["lsc_functions"], detail["dps"], action, value)
+                account.publish(item, dps)
+                # Confirm with the same authenticated HTTP connection. Never
+                # label a publish acknowledgement as a resulting device state.
+                return self._lsc_state(item, account.detail(item), "lsc")
             if config["mode"] == "cloud":
                 cloud = self._cloud(config)
                 cloud.command(item["device_id"], cloud_command(self._functions(cloud, item["device_id"]), action, value))
@@ -465,24 +518,29 @@ class Controller:
                 if device["slot"] == item["slot"]:
                     device["scene_profiles"] = profiles
             self.store.save(config)
-        return dict(state,slot=item["slot"],transport=transport,scenes=scene_options(item["rgb"],profiles))
+        result = dict(state,slot=item["slot"],transport=transport,scenes=scene_options(item["rgb"],profiles))
+        with self.cache_lock:
+            self.detail_cache[item['slot']] = (time.monotonic(), item['device_id'], dict(json.loads(json.dumps(detail)), _transport=transport))
+            self.state_cache[item['slot']] = (time.monotonic(), item['device_id'], json.loads(json.dumps(result)))
+        return result
 
     def scan(self):
         import tinytuya
-        results = tinytuya.deviceScan(verbose=False, maxretry=8)
+        results = tinytuya.deviceScan(verbose=False, maxretry=3, poll=False)
         found = [{"ip": ip, "device_id": d.get("gwId", d.get("id", "")), "version": d.get("version", "")}
                  for ip, d in results.items() if isinstance(d, dict)]
-        config = self.store.load()
-        changed = False
-        if config["mode"] == "lsc":
-            for observed in found:
-                for item in config["devices"]:
-                    if observed["device_id"] == item["device_id"]:
-                        item.update(ip=observed["ip"],version=str(observed["version"]),lsc_local_available=True)
-                        self.local_retry_after.pop(item["slot"], None)
-                        changed = True
-            if changed:
-                self.store.save(config)
+        with self.lock:
+            config = self.store.load()
+            changed = False
+            if config["mode"] == "lsc":
+                for observed in found:
+                    for item in config["devices"]:
+                        if observed["device_id"] == item["device_id"]:
+                            item.update(ip=observed["ip"],version=str(observed["version"]),lsc_local_available=True)
+                            self.local_retry_after.pop(item["slot"], None)
+                            changed = True
+                if changed:
+                    self.store.save(config)
         return found
 
     def _lsc_local(self, item, dps=None):

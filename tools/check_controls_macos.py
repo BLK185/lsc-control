@@ -32,8 +32,9 @@ def main():
         "CFBundleIdentifier": "fr.carfr.LSCControl.ControlsProbe",
         "NSAppTransportSecurity": {"NSAllowsLocalNetworking": True},
     }))
-    subprocess.run(["xcrun", "swiftc", "-parse-as-library", "-sdk", sdk,
+    subprocess.run(["xcrun", "swiftc", "-parse-as-library", "-D", "LSC_TESTING", "-sdk", sdk,
                     "-target", "arm64-apple-macos26.0", str(ROOT / "macos/Shared/ControlsClient.swift"),
+                    str(ROOT / "macos/Controls/LampControls.swift"),
                     str(ROOT / "macos/Tests/Probe.swift"),
                     "-Xlinker", "-sectcreate", "-Xlinker", "__TEXT", "-Xlinker", "__info_plist",
                     "-Xlinker", str(probe_info), "-o", str(probe)], check=True)

@@ -15,7 +15,10 @@ struct LightQuery: EntityQuery {
     var configuration
 
     func suggestedEntities() async throws -> [LSCLight] {
-        try await ControlsClient.lights(code: configuration?.code).map { LSCLight(id: $0.id, name: $0.name) }
+        // A fresh control has no pairing yet. Do not fail the whole native
+        // editor while the person is still entering its connection code.
+        guard (try? ControlsClient.code(configuration?.code)) != nil else { return [] }
+        return try await ControlsClient.lights(code: configuration?.code).map { LSCLight(id: $0.id, name: $0.name) }
     }
 
     func entities(for identifiers: [String]) async throws -> [LSCLight] {
@@ -26,7 +29,7 @@ struct LightQuery: EntityQuery {
 struct LightConfiguration: ControlConfigurationIntent {
     static var title: LocalizedStringResource = "Choisir un éclairage LSC"
 
-    @Parameter(title: "Code de connexion (première utilisation)")
+    @Parameter(title: "Code de connexion", description: "À copier depuis LSC Control → Centre de contrôle…")
     var code: String?
 
     @Parameter(title: "Éclairage")
@@ -46,13 +49,13 @@ struct LampValue: Sendable {
 
 struct LampProvider: AppIntentControlValueProvider {
     func previewValue(configuration: LightConfiguration) -> LampValue {
-        LampValue(id: configuration.light?.id ?? "all", name: configuration.light?.name ?? "Éclairage LSC",
+        LampValue(id: configuration.light?.id ?? "unconfigured", name: configuration.light?.name ?? "Choisir une ampoule",
                   power: false, code: configuration.code)
     }
 
     func currentValue(configuration: LightConfiguration) async throws -> LampValue {
         guard let light = configuration.light else {
-            throw ControlsError.message("Modifie cette commande pour choisir un éclairage.")
+            return LampValue(id: "unconfigured", name: "Choisir une ampoule", power: false, code: configuration.code)
         }
         let records = try await ControlsClient.lights(code: configuration.code)
         guard let current = records.first(where: { $0.id == light.id }) else {
@@ -73,6 +76,9 @@ struct SetLampPower: SetValueIntent {
     init(identifier: String, code: String?) { self.identifier = identifier; self.code = code }
 
     func perform() async throws -> some IntentResult {
+        guard identifier != "unconfigured" else {
+            throw ControlsError.message("Modifie la commande, colle le code de connexion puis choisis une ampoule.")
+        }
         try await ControlsClient.setPower(identifier, value: value, code: code)
         ControlCenter.shared.reloadControls(ofKind: "fr.carfr.LSCControl.Power")
         return .result()
@@ -88,12 +94,15 @@ struct LampControl: ControlWidget {
             }
             .tint(Color(red: 138.0 / 255, green: 0, blue: 252.0 / 255))
         }
+        .promptsForUserConfiguration()
         .displayName("Éclairage LSC")
         .description("Allumer ou éteindre un éclairage du compte, ou tous ensemble. LSC Control doit rester ouvert.")
     }
 }
 
+#if !LSC_TESTING
 @main
 struct LSCControls: WidgetBundle {
     var body: some Widget { LampControl() }
 }
+#endif

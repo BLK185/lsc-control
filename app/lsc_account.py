@@ -10,7 +10,7 @@ import subprocess
 import sys
 import threading
 from pathlib import Path
-from core import ControlError, HOME
+from core import ControlError, HOME, InventoryYield
 
 
 def schema_functions(raw):
@@ -77,6 +77,7 @@ class LSCAccount:
         self.sequence = 0
         self.use_portable = use_portable
         self.portable = None
+        self.cancel = None
         if restore:
             saved = store.secret("lsc_session:" + region)
             if saved:
@@ -97,6 +98,8 @@ class LSCAccount:
             creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
 
     def request(self, api, data=None, version="1.0", gid=None, timezone_id=None):
+        if self.cancel and self.cancel():
+            raise InventoryYield()
         with self.lock:
             if self.use_portable:
                 from lsc_portable import LSCPortableTransport, PortableError

@@ -48,7 +48,7 @@ enum ControlsClient {
             throw ControlsError.message("Commande inconnue.")
         }
         var request = URLRequest(url: URL(string: root + path)!)
-        request.timeoutInterval = 30
+        request.timeoutInterval = body == nil ? 5 : 20
         request.setValue("Bearer " + token, forHTTPHeaderField: "Authorization")
         if let body {
             request.httpMethod = "POST"
@@ -75,7 +75,9 @@ enum ControlsClient {
             // Store only the local power-control capability, after validation.
             // The extension has its own sandbox; no App Group or LSC credential
             // is shared with it. Other controls can reuse this pairing.
-            UserDefaults.standard.set(token, forKey: preference)
+            if UserDefaults.standard.string(forKey: preference) != token {
+                UserDefaults.standard.set(token, forKey: preference)
+            }
             return result
         } catch let error as ControlsError { throw error }
         catch {

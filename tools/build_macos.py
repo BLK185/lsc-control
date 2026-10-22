@@ -15,7 +15,7 @@ import sys
 from build_windows import licenses
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.5.0"
+VERSION = "0.5.1"
 
 
 def run(*args):
@@ -58,7 +58,7 @@ def main():
     shutil.copy2(ROOT / "docs/INSTALLATION_MACOS.md", resources / "INSTALLATION_MACOS.md")
     info = bundle / "Contents/Info.plist"
     metadata = plistlib.loads(info.read_bytes())
-    metadata.update(CFBundleShortVersionString=VERSION, CFBundleVersion="5",
+    metadata.update(CFBundleShortVersionString=VERSION, CFBundleVersion="6",
                     LSMinimumSystemVersion="13.0", NSHighResolutionCapable=True,
                     NSLocalNetworkUsageDescription="Retrouver vos éclairages LSC sur le réseau local pour un contrôle plus rapide.",
                     NSHumanReadableCopyright="LSC Control contributors — MIT")

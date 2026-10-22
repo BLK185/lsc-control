@@ -1,6 +1,6 @@
 # Installer LSC Control sur Mac Apple Silicon
 
-Préversion 0.5.0 — Mac M1, M2, M3, M4 et suivants, macOS 13 ou ultérieur.
+Préversion 0.5.1 — Mac M1, M2, M3, M4 et suivants, macOS 13 ou ultérieur.
 Les commandes natives expérimentales nécessitent macOS 26 ou ultérieur.
 Cette version ARM64 contient Python et ses dépendances. Rosetta, Homebrew et
 un compte développeur Tuya ne sont pas nécessaires.
@@ -57,7 +57,8 @@ marche/arrêt ; les autres réglages restent dans l’app et la barre des menus.
 2. Dans le menu de LSC Control ou son icône d’ampoule, ouvrir **Centre de contrôle…**.
 3. Cliquer **Copier le code de connexion**.
 4. Ouvrir le Centre de contrôle du Mac → **Modifier les commandes** → chercher **LSC Control** → ajouter **Éclairage LSC**.
-5. Modifier cette commande : coller le code dans **Code de connexion (première utilisation)**, puis choisir l’éclairage. Ce champ peut se trouver dans les paramètres supplémentaires.
+5. La nouvelle commande ouvre sa configuration : cliquer dans la valeur à droite de **Code de connexion**, coller avec `⌘V`, puis choisir l’éclairage et valider.
+6. Pour chaque autre ampoule, faire glisser à nouveau **Éclairage LSC** depuis la galerie et choisir une autre ampoule. Retirer les anciennes commandes vides de la beta précédente avant de recommencer.
 
 Les commandes suivantes peuvent réutiliser cette association. Ajouter plusieurs
 fois **Éclairage LSC** pour commander plusieurs lampes séparément. Garder l’app
@@ -88,3 +89,9 @@ ne reproduisent pas les événements push de LSC.
 Construction depuis les sources : Python 3.12 ARM64, puis
 `python -m pip install -r app/requirements-macos.lock.txt` et
 `python tools/build_macos.py`, sur un Mac Apple Silicon.
+
+## Réactivité — correctifs 0.5.1
+
+Les commandes prennent la priorité sur la suite des lectures en cours. La recherche locale s’effectue automatiquement sur Mac, en arrière-plan, et peut être relancée avec Connexion locale rapide. Les connexions HTTPS au service LSC sont réutilisées. Une description d’ampoule vérifiée il y a moins de 15 secondes évite une lecture préalable redondante ; l’état après écriture est toujours relu pour confirmer la commande.
+
+Le contrôle natif réutilise l’état récent vérifié par l’app. Sans configuration, il affiche Choisir une ampoule plutôt qu’un chargement permanent. La fenêtre Centre de contrôle… indique si des requêtes natives sont reçues ou si le code est refusé. La diminution effective de la latence et l’ajout multiple restent à confirmer sur le Mac du propriétaire.

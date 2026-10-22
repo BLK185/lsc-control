@@ -3,6 +3,8 @@ import argparse
 import json
 import os
 import sys
+import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from collections import OrderedDict
 from pathlib import Path
@@ -44,7 +46,13 @@ class Window(QMainWindow):
         self.last_states = {}
         self.device_states = {}
         self.pending_commands = OrderedDict()
+        self.command_waiting = threading.Event()
+        self.controller.read_yield = self.command_waiting.is_set
+        self.controller.interrupt_reads = self.command_waiting.set
         self.executor = ThreadPoolExecutor(max_workers=1)
+        self.discovery_executor = ThreadPoolExecutor(max_workers=1)
+        self.discovery_busy = False
+        self.discovery_checked = 0
         self.results = Results()
         self.results.ready.connect(self.complete)
         self.setWindowTitle("LSC Control" + (" — démonstration" if controller.demo else ""))
@@ -118,6 +126,14 @@ class Window(QMainWindow):
 
     def complete(self, context, payload):
         values, error = payload
+        if context == "discovery":
+            self.discovery_busy = False
+            if not self.busy and not self.exiting:
+                if error:
+                    self.message.setText("Réseau local indisponible. Le contrôle LSC reste disponible.")
+                elif values:
+                    QTimer.singleShot(0, lambda: self.refresh(observe=True))
+            return
         self.busy = False
         # Snapshot before dequeuing: this result predates those user adjustments.
         waiting_adjustments = {slot for slot, action in self.pending_commands
@@ -125,6 +141,8 @@ class Window(QMainWindow):
         if self.pending_commands:
             (slot, action), value = self.pending_commands.popitem(last=False)
             QTimer.singleShot(0, lambda s=slot, a=action, v=value: self.command(s, a, v))
+        else:
+            self.command_waiting.clear()
         for card in self.cards.values():
             for control in card.controls:
                 control.setEnabled(True)
@@ -186,6 +204,7 @@ class Window(QMainWindow):
         if slot not in self.cards:
             return
         if self.busy:
+            self.command_waiting.set()
             key = (slot, action)
             self.pending_commands[key] = value
             self.pending_commands.move_to_end(key)
@@ -245,6 +264,8 @@ class Window(QMainWindow):
         return super().eventFilter(watched, event)
 
     def refresh(self, observe=False, force=False):
+        if not self.busy and not self.pending_commands:
+            self.command_waiting.clear()
         def work():
             sync_error = None
             try:
@@ -254,6 +275,8 @@ class Window(QMainWindow):
             devices = self.controller.devices()
             result = []
             for device in devices:
+                if self.command_waiting.is_set():
+                    break
                 slot = device["slot"]
                 try:
                     result.append(self.controller.status(slot))
@@ -273,7 +296,24 @@ class Window(QMainWindow):
             self.refresh(force=True)
 
     def scan(self):
-        self.submit(self.controller.scan, "scan")
+        self.start_local_discovery(force=True)
+
+    def start_local_discovery(self, force=False):
+        if self.controller.demo or self.discovery_busy or self.exiting:
+            return
+        if not force and time.monotonic() - self.discovery_checked < 300:
+            return
+        self.discovery_busy = True
+        self.discovery_checked = time.monotonic()
+        if force:
+            self.message.setText("Recherche locale en arrière-plan…")
+        future = self.discovery_executor.submit(self.controller.scan)
+        def finished(result):
+            try:
+                self.results.ready.emit("discovery", (result.result(), None))
+            except Exception:
+                self.results.ready.emit("discovery", (None, "Discovery unavailable"))
+        future.add_done_callback(finished)
 
     def open_window(self):
         self.showNormal()
@@ -292,6 +332,7 @@ class Window(QMainWindow):
         self.timer.stop()
         self.tray.hide()
         self.executor.shutdown(wait=False, cancel_futures=True)
+        self.discovery_executor.shutdown(wait=False, cancel_futures=True)
         QApplication.quit()
 
 def main():

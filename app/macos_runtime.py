@@ -63,6 +63,7 @@ class MacIntegration(QObject):
             self.window.refresh(observe=True)
 
     def updated(self):
+        self.window.start_local_discovery()
         signature = [(device['slot'], device['name'], self.window.device_states.get(device['slot'], {}).get('power'))
                      for device in self.window.controller.devices()]
         if signature != self.control_signature:
@@ -136,6 +137,21 @@ class MacIntegration(QObject):
                 caption.setWordWrap(True)
                 caption.setObjectName("muted")
                 layout.addWidget(caption)
+                connection = QLabel("Connexion native : en attente")
+                connection.setObjectName("muted")
+                layout.addWidget(connection)
+                health_timer = QTimer(dialog)
+                def update_health():
+                    metrics = self.controls.server.metrics if self.controls.server else {}
+                    if metrics.get('accepted'):
+                        connection.setText("Connexion native : requêtes reçues ✓")
+                    elif metrics.get('refused'):
+                        connection.setText("Code refusé : recopie-le dans la commande native.")
+                    else:
+                        connection.setText("Connexion native : en attente de la configuration du Mac")
+                health_timer.timeout.connect(update_health)
+                health_timer.start(500)
+                update_health()
         close = QPushButton("Fermer")
         close.clicked.connect(dialog.accept)
         layout.addWidget(close)

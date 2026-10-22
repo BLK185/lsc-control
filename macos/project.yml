@@ -23,8 +23,8 @@ targets:
       path: Controls-Info.plist
       properties:
         CFBundleDisplayName: LSC Control
-        CFBundleShortVersionString: '0.5.0'
-        CFBundleVersion: '5'
+        CFBundleShortVersionString: '0.5.1'
+        CFBundleVersion: '6'
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
         NSExtension:

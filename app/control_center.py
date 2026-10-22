@@ -43,8 +43,10 @@ def create_server(controller, token, port=PORT, changed=lambda: None):
             if (self.headers.get("Origin") or self.headers.get("Referer")
                     or self.headers.get("Host") != f"127.0.0.1:{self.server.server_port}"
                     or not hmac.compare_digest(supplied, ("Bearer " + token).encode("ascii"))):
+                self.server.metrics['refused'] += 1
                 self.reply(401, {"error": "Accès aux commandes refusé."})
                 return False
+            self.server.metrics['accepted'] += 1
             return True
 
         def targets(self, identifier):
@@ -68,7 +70,7 @@ def create_server(controller, token, port=PORT, changed=lambda: None):
                 elif self.path.startswith("/power/"):
                     slots = self.targets(self.path[len("/power/"):])
                     # Read every target, including when the first one is off.
-                    states = [controller.status(slot) for slot in slots]
+                    states = [controller.recent_status(slot) or controller.status(slot) for slot in slots]
                     self.reply(200, {"power": all(state["power"] for state in states)})
                 else:
                     self.reply(404, {"error": "Commande inconnue."})
@@ -120,7 +122,9 @@ def create_server(controller, token, port=PORT, changed=lambda: None):
             connection.settimeout(8)
             return connection, address
 
-    return Server(("127.0.0.1", port), Handler)
+    server = Server(("127.0.0.1", port), Handler)
+    server.metrics = {'accepted': 0, 'refused': 0}
+    return server
 
 
 class ControlsService:
